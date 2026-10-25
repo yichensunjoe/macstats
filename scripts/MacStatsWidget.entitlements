@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- pkd 明确要求 App Extension 必须沙盒化，否则整个插件会被忽略。 -->
+  <key>com.apple.security.app-sandbox</key>
+  <true/>
+</dict>
+</plist>

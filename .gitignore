@@ -1,0 +1,13 @@
+.build/
+.build-debug/
+MacStats.app/
+.DS_Store
+*.xcodeproj
+xcuserdata/
+
+# Local working notes — personal workflow, never published
+/AGENTS.md
+/HANDOFF.md
+/REUSE_AND_PITFALL_LOG.md
+/docs/tasks.md
+/docs/_preview.html
