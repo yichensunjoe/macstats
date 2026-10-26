@@ -33,7 +33,7 @@
 ### 发布基础设施（0.4 起用）
 
 - **CI**（`.github/workflows/ci.yml`）：push / PR 跑 `swift test`、归档、`codesign --verify`、
-  `unzip -t`、`shasum -c`；`check-docs.py` 已接入但暂为 `continue-on-error`，0.4 发布前转硬。
+  `unzip -t`、`shasum -c`；`check-docs.py` 已接入并转为硬性检查（本地 0 错；首次远程 CI 在推送后运行）。
   注意 CI 没有 Developer ID，走 ad-hoc 签名，只证明包完整，不代表 WidgetKit 真机可用。
 - **BUILD 单一来源**：仓库根新增 `BUILD` 文件，`bundle.sh` 从这里读构建号
   （`MACSTATS_BUILD` 仍可覆盖）；发版只改 `BUILD`，不再改脚本。
