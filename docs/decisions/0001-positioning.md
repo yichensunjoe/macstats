@@ -38,3 +38,30 @@
 3. 从 `v0.3` 拉分支只 cherry-pick 安装/文案/显示名，需要处理 10 份 README 与测试数的冲突，然后紧接着再发 0.4——多一次构建、多一次签名、多一次回滚面，收益为零。
 
 **结论**：0.3.1 不发布、不建 `release-notes-0.3.1.md`；`VERSION` 直接置 0.4，发布说明用已写好的 `docs/release-notes-0.4.md`。若将来重启分发且仍想要一个"只修文案"的快版本，再从 `v0.3` 单独切分支，不在当前 main 上倒推。
+
+## 附：`MacS` 查重记录（2026-10-26）
+
+**结论：没有发现同名的 Mac 系统监控应用；但 `MacS` 不是干净、可防御的名字，不建议在公开发布/推广中继续使用。**
+
+| 查重面 | 方法 | 结果 |
+|---|---|---|
+| Mac App Store | iTunes Search API，`term=macs`，`entity=macSoftware`，US / CN / GB / DE / JP | **没有 `MacS` 精确同名**；CN/GB/DE/JP 各 167–194 条结果中精确命中 0，US 早先 37 条模糊结果中精确命中 0。商店搜索是模糊匹配，不能当作完整索引。 |
+| GitHub | 仓库名精确匹配 `macs` | 已有 `checkra1n/macs`（Apple Silicon 计划）与 `KoljaWindeler/macs`（门禁系统），都不是系统监控；**没有 `MacS` 监控项目**。邻接项目：`crystalidea/macs-fan-control`（1.7k ★）、`iliyami/MacSai`（约 2k ★，Mac 清理工具）。 |
+| Homebrew | cask token / name 含 `macs` | `macs-fan-control`、`mac-sai`；**没有 `macs` cask**。前者在 MacUpdate 有约 114 万下载、5,982 条评分。 |
+| 域名 | RDAP + 页面 | `macs.app` 2018-05-08 注册、2027-05-08 到期，当前在线且页面标题为 `M.A.C.S.`；`getmacs.com` / `macs.io` 是停放页。 |
+| 商标 | Justia `MacS` 检索 | 大量 `MACS` 记录，含 1974 年 Management and Computer Services（与 Wired 报道的 1985 年 Apple/MACS 和解案同名，是否同一主体未核实）、1996 年 Smith-Gardner、EU Miltenyi（class 42 含软件，但限定生物分离）。**未做正式商标检索，也未逐条核实法律状态。** |
+| 产品页 | Exa / MacUpdate / Product Hunt | 未发现同名 Mac 监控产品；最接近的新品叫 `MacSentinel`，不是 `MacS`。 |
+
+**风险**：
+
+1. **搜索混淆**：`MacS` 与 `Macs` 只差一个字母，搜索引擎和 App Store 会模糊匹配到 Macs Fan Control、Macs Cue、MacSales 等；用户很难通过名字找到我们。
+2. **商标弱**：`MacS` 描述性强、与 Apple 的 `Mac` 及既有 `MACS` 标记都近；在没有律师意见前，不适合把品牌资产押在它上面。
+3. **域名已占**：`macs.app` 已被注册并在线，无法拿到最直觉的域名。
+
+**建议**：
+
+- 若 H3 维持"不分发"、只做个人/开发者本地使用：可以继续用 `MacS`，实际风险低，但不要公开推广或投放。
+- 若要做公开分发：回退到 H2 备选 **`MacStats Panel`**，或另取一个 coined name 后重跑本表。`MacStats Panel` 仍靠近 `MacStats.app` 与 App Store 的 `Stats Panel`，但比 `MacS` 更可搜索，也不与 `Macs Fan Control` 直接混淆。
+- 改名成本：显示名、Cask `name`、10 份 README 标题、`docs/install.md`、`.appName/.menuAbout` 等文案；**务必在 push/tag 前改完**，发布后改名要再发一版。
+
+Sources: [Macs Fan Control](https://crystalidea.com/macs-fan-control)、[Mac Sai](https://github.com/iliyami/MacSai)、[macs.app](https://macs.app)、[Justia MACS](https://trademarks.justia.com/search?q=MacS)、[Wired: Apple/MACS 1985](https://www.wired.com/2007/01/steve-jobs-trad/)。
