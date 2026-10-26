@@ -5,7 +5,9 @@
 三层结构：采样层（`MacStatsCore`，纯 Swift 逻辑，无 UI 依赖）→ 展示模型（`WidgetData`，快照 + 90 点环形历史）
 → SwiftUI 视图（`WidgetView` 及其组件）。App 层（`MacStats`）用一块桌面层 `NSPanel` 承载视图，另有一个诊断 CLI 复用同一采样层。
 两条旁路都挂在采样之后：`HistoryStore` 把读数按分钟落盘并回读 24 小时，`ThresholdAlertEvaluator`
-消费同一份快照决定要不要发通知。
+消费同一份快照决定要不要发通知。归因（「当时是谁」）由三条纯函数链路支撑：采样层用 `ProcessRanking`
+在按内存截断前算 top CPU，历史层把 top 进程按分钟聚合进 `HistorySample.topProcesses`，
+展示层用 `HistoryAnalysis` 找峰值再点开看进程；告警则把 `AlertEvent.culprit` 写进通知。
 
 ## 组件与边界
 
@@ -18,9 +20,20 @@
 - `MacStatsCore/History`：`MetricRing` 定长环形缓冲、`SeriesMath.normalize` 多曲线共用纵轴。
 - `MacStatsCore/HistoryStore`：1 秒读数在内存按分钟累加（均值），跨分钟写一行 JSONL 到
   `~/Library/Application Support/MacStats/history/history-YYYY-MM-DD.jsonl`；启动 `loadRecent` 回读 24 小时，
-  按保留期删除超期天文件，退出时 `flush`。文件格式是纯 Codable 结构（`HistoryPoint`），测试可注入临时目录。
+  按保留期删除超期天文件，退出时 `flush`。文件格式是纯 Codable 结构（`HistorySample`：`timestamp / cpu / memory / gpu? / diskUsed / topProcesses?`），测试可注入临时目录。
+  进程归因单独走一套分钟聚合：同一秒的同名进程先合并（CPU、内存各自求和），再按名字取分钟内的**峰值**
+  （不是均值——用户问的是「那阵卡是谁」，平均会被空闲秒稀释）；落盘时按 CPU 降序、名字升序取前 3。
+  `topProcesses` 是 Optional：旧 JSONL 没有这个键，合成的 `Decodable` 走 `decodeIfPresent` 得到 nil，不伪造。
+- `MacStatsCore/HistoryAnalysis`：峰值纯函数。`peak(in:metric:)` 按数组顺序扫描取第一个最大值（并列取最早），
+  GPU 为 nil 的点跳过（没独显不能把「没数据」当 0 比较）。UI 只调这里，不在视图里重写「取最大值」。
+- `MacStatsCore/ProcessRanking`：归因排序纯函数。`attributions(from:limit:by:)` 先按名字聚合再排序，
+  避免「两个同名进程各排第 9、10 名，只取原始 top 8 再聚合」漏掉合计 CPU 进前三的元凶；
+  `by: .cpu / .memory` 必须分开：内存告警的元凶通常不是 CPU 第一名。
 - `MacStatsCore/ThresholdAlerts`：纯状态机，输入一次采样与当前时间，输出「该不该通知」。
   连续 3 次超阈值才进入触发态，同一指标 10 分钟冷却，低于阈值立即清零；时间可注入，单测不睡觉。
+  `AlertEvent.culprit` 携带当时的进程归因（CPU 事件填 top CPU、内存事件填 top 内存、磁盘事件为 nil）；
+  `AlertNotificationText` 把「有 / 无 culprit」的正文与副标题格式化抽成纯函数，便于单测。
+  新参数都有默认值，0.4 之前的旧调用仍编译、仍触发，只是 culprit 为 nil、正文回退旧模板。
 - `MacStatsCore/Format`：字节 / 百分比 / 时长 / 瓦数格式化，纯函数，单测覆盖。
 - `MacStatsCore/ProcessCleanup`：进程表快照（`proc_listpids` + `proc_pidinfo` + `proc_pid_rusage`）、
   空闲跟踪、保护规则、SIGTERM 终止。`LiveProcess` / `ProcessFacts` / `CleanupRules` 是纯数据与纯规则，
@@ -37,6 +50,8 @@
 - `MacStats/ProcessDialogs`：清理确认 / 结果 / 空状态 / 错误提示的 SwiftUI 窗口；
   `NSApp.runModal` 用按钮回传 `.OK` / `.cancel`，每个候选附 `ProcessGlossary` 的说明与影响。
 - `MacStats/WidgetView` + `Components`：面板布局、趋势线、核心条、内存压力/构成条。
+  历史卡的峰值文字是按钮（外观不变），点开 `PeakDetailView` popover：时间、数值、当时 top 3 进程；
+  无进程 / GPU 两种情况如实显示「未记录」，不用当前进程列表顶替。
 - `MacStats/SnapshotRenderer`：`--snapshot` 时用 `ImageRenderer` 离屏出图，便于比较排版。
 
 ## 数据流
@@ -47,10 +62,15 @@
 3. `snapshot.applying(WindowAverages)` 生成展示快照（内存字段保持瞬时值，5 秒窗口只作用于速率类指标）。
 4. 替换 `NSHostingView.rootView` 触发重绘；菜单栏标题同步更新。
 5. 同时把读数交给 `HistoryStore`：分钟累加器跨分钟时写盘；面板历史卡读 `loadRecent(hours: 24)`，
-   历史不足两点时显示「刚开始记录」。
-6. 同一份快照交给 `ThresholdAlertEvaluator`，触发时走已有的 `UNUserNotification` 通道；冷却与计数都在内存。
-7. 清理走独立节奏：每 30 秒扫一次进程表更新「最后活跃时间」，点「一键清理」时再扫一次算候选；
+   历史不足两点时显示「刚开始记录」。写历史时一并传入 `snapshot.topCPU.prefix(3)`（采样层在按内存截断**之前**
+   算好的 top CPU），由 `HistoryStore` 做秒内合并 + 分钟峰值。
+6. 面板历史卡的峰值统一由 `HistoryAnalysis.peak` 算；点峰值打开 popover，读该分钟点的 `topProcesses`
+   显示「当时是谁」，数据为空就说「当时未记录进程」，GPU 说「暂未记录」。
+7. 同一份快照交给 `ThresholdAlertEvaluator`，触发时走已有的 `UNUserNotification` 通道；冷却与计数都在内存。
+   调用方传 `topCPU: snapshot.topCPU.first`、`topMemory: ProcessRanking.attributions(from: snapshot.processes, limit: 1, by: .memory).first`。
+8. 清理走独立节奏：每 30 秒扫一次进程表更新「最后活跃时间」，点「一键清理」时再扫一次算候选；
    候选先经过身份 / 路径 / 父子 / 套接字 / 闲置五层筛选，列出清单等用户确认后才发 SIGTERM。
+   结果框只报「候选进程终止前的 RSS 合计」（`CleanupResult.freedBytes`），并注明系统实际回收量可能不同。
 
 ## 外部依赖
 
@@ -69,10 +89,18 @@
 - **能耗显示瓦数**：AM 的「能耗影响」是相对分数量纲，无法复刻；直接给物理功率并标注来源。
 - **最贵的一项降频**：进程表要遍历全部 PID 各读一次 `rusage`，是单次采样的主要开销，而进程内存与能耗都是慢变量，
   因此按 3 秒扫描；实测 1 秒刷新的常驻开销从 2.6% 单核降到 1.1%。
-- **历史存分钟点而不是小时降采样**：24 小时卡需要分钟级走势；133 字节/点、约 190 KB/天，
-  30 天也只有约 5.6 MB，没必要为了省空间先降采样。`hourly(days:)` 已实现，留给以后的 30 天视图。
+- **历史存分钟点而不是小时降采样**：24 小时卡需要分钟级走势；不带进程的分钟点约 133 字节/点、约 190 KB/天，
+  30 天也只有约 5.6 MB。0.4 起每个点最多带 3 条进程归因（名字 + CPU + 内存），单点约 250–350 字节、
+  约 350–500 KB/天，30 天约 10–15 MB，仍低于 50 MB 预算，所以没有提前降采样；
+  若实测超过 500 KB/天，再考虑只在 CPU ≥ 50% 的分钟写归因。`hourly(days:)` 已实现，留给以后的 30 天视图。
+- **归因取分钟峰值而不是平均**：用户问的是「那阵卡是谁」，峰值比一分钟平均更接近元凶；
+  平均会被空闲秒稀释。同名进程先合并再排名，避免同一个 node 出现三次。
+- **GPU 不做进程归因**：当前采样拿不到可靠的 per-process GPU 占用；峰值浮层如实写「GPU 归因暂未记录」，
+  不用当前进程列表补——那会把归因变成编造。
 - **告警要连续 3 次才算数**：单次编译或导出就能把 CPU 顶到 100%，按瞬时值报警会变成噪音；
   3 次采样（默认约 3 秒）加 10 分钟冷却，代价是极端情况下晚 2 秒提醒。
+- **告警的 CPU 元凶与内存元凶分开排名**：CPU 高但内存小的进程不会进「按内存截断」的 `processes`，
+  所以 CPU 元凶取自截断前算好的 `snapshot.topCPU`；内存元凶必须显式按 `.memory` 排名，不能复用 CPU 第一名。
 - **清理只动「遗留孤儿」**：父进程还在、自己有子进程、持有任何套接字（含 stdio 之外的 Unix socket）的进程一律跳过。
   这四条各自都算「有人在用」，覆盖面比「CPU 很低」大得多；实测本机 12 个闲置 node/python 全部被正确排除
   （MCP server、vite dev server、uvicorn、Electron 守护进程）。

@@ -142,16 +142,26 @@ On first launch a small `CPU · Memory` readout appears in the menu bar and the 
 ## 24-hour history and sustained-load alerts
 
 Standard and expanded panels carry a “Last 24 Hours” row: CPU, memory and GPU curves, each with its
-24-hour peak. Sampling stays at once per second; points are averaged per minute and written as JSONL
-under `~/Library/Application Support/MacStats/history/` — about 190 KB a day, kept for 30 days by default. Settings → Monitoring switches that to 7 / 30 / 90 days, or clears it.
+24-hour peak. The peak is clickable: it opens the time and value of that peak plus **the top three CPU
+processes at that moment** (name, CPU%, memory, each with a one-line plain-language note).
+Sampling stays at once per second; points are averaged per minute and written as JSONL under
+`~/Library/Application Support/MacStats/history/` — each minute point also records the three busiest
+processes at that time, about 0.4 MB a day, kept for 30 days by default. Settings → Monitoring
+switches that to 7 / 30 / 90 days, or clears it.
+
+Two honest limits: **GPU peaks do not list processes** (current sampling cannot get reliable per-process
+GPU usage), and **history written before this version has no process records** — clicking it says
+“No processes recorded then” rather than substituting today's process list.
 
 “Sustained load alerts” is off by default. When on, CPU ≥ 90%, memory ≥ 85% or disk ≥ 90% must hold
 for **three consecutive samples** before a notification fires, and each metric repeats at most every
-ten minutes — a single spike never interrupts you.
+ten minutes — a single spike never interrupts you. The notification body names the process responsible:
+the CPU event takes the top CPU process, the memory event the top memory process (ranked separately);
+disk events have no process attribution and report the value only.
 
 ## One-click cleanup of idle background processes
 
-Menu bar (or panel) → "Clean up idle background processes…". It only targets **leftover orphans**: started by you, parent already gone, no controlling terminal, no children, no sockets, and no CPU activity for 10 minutes. You get the list and an estimate first; only after you confirm does it send `SIGTERM`, and anything still running after 3 seconds is left alone — it never escalates to `SIGKILL`.
+Menu bar (or panel) → "Clean up idle background processes…". It only targets **leftover orphans**: started by you, parent already gone, no controlling terminal, no children, no sockets, and no CPU activity for 10 minutes. You get the list and the reported footprint of those processes first (not how much macOS will actually reclaim); only after you confirm does it send `SIGTERM`, and anything still running after 3 seconds is left alone — it never escalates to `SIGKILL`.
 
 Always untouched: system processes (`/System`, `/usr`, `/Library`, …), apps and their helpers (`.app/` in the path), commands attached to a tty, the frontmost app, children of a live parent, anything holding a TCP/UDP/Unix socket, the process's own children, and names on your whitelist (menu → "Cleanup whitelist", matched against both the executable name and `argv[0]`). Ticked names stay in that submenu with a ✓ so you can untick them later; "Clear whitelist" resets the list.
 
