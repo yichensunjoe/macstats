@@ -1,0 +1,81 @@
+# MacS · Bug 报告模板
+# 维护：A6（docs/roadmap-v0.4/A-positioning-and-trust.md §6）
+# 必填项 5 个：macOS 版本、芯片、MacS 版本、发生了什么、是否公证安装
+name: Bug 报告
+description: MacS 的数字不对、崩溃、界面异常，或行为不符合预期。
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。版本和芯片决定了能不能复现，请尽量填全。
+
+        - 只是**装不上**？请改用[安装问题模板](https://github.com/yichensunjoe/macstats/issues/new?template=install.yml)。
+        - 使用上的疑问、数字对不对的讨论？请到 [Discussions](https://github.com/yichensunjoe/macstats/discussions)。
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS 版本
+      description: 苹果菜单 → 关于本机。例如 macOS 15.0 (24A335)。
+      placeholder: "macOS 15.0 (24A335)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: chip
+    attributes:
+      label: 芯片
+      description: 关于本机里的「芯片」一栏。
+      options:
+        - Apple silicon（arm64）
+        - Intel
+        - 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: macs-version
+    attributes:
+      label: MacS 版本
+      description: 菜单栏图标 → 设置 → 通用里的版本号，或 Release 页面上的版本。
+      placeholder: "0.3.1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 一句话说清现象，然后按 1. 2. 3. 写出复现步骤；如果能稳定复现，请注明。
+      placeholder: |
+        现象：
+        1.
+        2.
+        3.
+        期望：
+        实际：
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图（可选）
+      description: 直接把图片拖进这个框即可；面板异常、报错对话框、与活动监视器的对照截图都很有用。
+    validations:
+      required: false
+
+  - type: dropdown
+    id: notarized
+    attributes:
+      label: 是否公证安装
+      description: 当前版本未做 Apple 公证，首次打开需要右键 →「打开」。这一项决定 Gatekeeper 相关问题怎么排查。
+      options:
+        - 未公证（右键 →「打开」放行）
+        - 已公证（双击直接打开）
+        - 不确定
+    validations:
+      required: true

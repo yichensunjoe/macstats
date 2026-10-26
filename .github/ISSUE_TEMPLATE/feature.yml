@@ -1,0 +1,40 @@
+# MacS · 功能建议模板
+# 维护：A6（docs/roadmap-v0.4/A-positioning-and-trust.md §6）
+# 必填项 1 个：想解决的问题
+name: 功能建议
+description: 说清你想让 MacS 解决的问题，而不是先给一个方案。
+title: "[Feature] "
+labels:
+  - feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        写之前请先想清楚：**你想解决的是什么问题？**
+
+        像「加个 GPU 温度指标」这样的请求很难评估——它跳过了「为什么需要」。请描述你在什么场景下、被什么事卡住，方案可以留空。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解决的问题
+      description: 一句话说清场景和痛点。例如：编译时风扇狂转，但不知道是哪个进程在吃 CPU。
+      placeholder: 我在____的时候，遇到____，希望能____。
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: 现在怎么绕过（可选）
+      description: 你现在用什么办法对付这个问题？活动监视器、别的工具、还是干脆忍着。
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充（可选）
+      description: 参考截图、类似产品的做法、或你认为可以接受的取舍。
+    validations:
+      required: false

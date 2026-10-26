@@ -1,0 +1,53 @@
+# MacS · 安装问题模板
+# 维护：A6（docs/roadmap-v0.4/A-positioning-and-trust.md §6）
+# 必填项 2 个：卡在哪一步、是否试过右键/xattr
+name: 安装问题
+description: MacS 下载、解压、拖进 Applications 或首次打开时卡住了。
+title: "[Install] "
+labels:
+  - install
+body:
+  - type: markdown
+    attributes:
+      value: |
+        安装步骤见 [docs/install.md](https://github.com/yichensunjoe/macstats/blob/main/docs/install.md)，先照着走一遍能省一轮来回。
+
+        当前版本**未做 Apple 公证**，从网络下载后首次打开会被 Gatekeeper 拦下，这是预期行为：右键 App →「打开」确认一次即可，或在终端执行 `xattr -dr com.apple.quarantine /Applications/MacStats.app`。
+
+        下载下来的包叫 `MacStats.app`，装好后在 Finder / 启动台里显示的名字是 **MacS**。
+
+  - type: dropdown
+    id: stuck-step
+    attributes:
+      label: 卡在哪一步
+      description: 选最接近的一步；不确定就选「其他」并在下面说明。
+      options:
+        - 下载（Release 页面打不开 / 下载中断）
+        - 解压（zip 打不开 / 解压报错）
+        - 拖进 Applications（拖不进去 / 提示已存在）
+        - 首次打开被拦（Gatekeeper 提示无法验证开发者）
+        - 小组件不出现（小组件库里搜不到）
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: gatekeeper-screenshot
+    attributes:
+      label: Gatekeeper 提示截图（可选）
+      description: 把系统弹窗截图拖进这个框；没有截图就贴弹窗原文。
+    validations:
+      required: false
+
+  - type: dropdown
+    id: tried-workaround
+    attributes:
+      label: 是否试过右键打开或 xattr
+      description: 这两种是未公证 App 的常规放行方式，说明试过哪一种能帮助定位。
+      options:
+        - 试过右键 →「打开」，仍然不行
+        - 试过 xattr 清除隔离属性，仍然不行
+        - 两种都试过，仍然不行
+        - 都没试过
+    validations:
+      required: true

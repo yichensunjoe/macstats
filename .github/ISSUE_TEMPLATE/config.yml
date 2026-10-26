@@ -1,0 +1,8 @@
+# MacS · Issue 模板配置
+# 维护：A6（docs/roadmap-v0.4/A-positioning-and-trust.md §6）
+# 关闭空白 Issue：反馈必须走上面三个模板，才能被归类。
+blank_issues_enabled: false
+contact_links:
+  - name: 使用问题 / 讨论（Discussions）
+    url: https://github.com/yichensunjoe/macstats/discussions
+    about: 安装求助、使用疑问、数字对不对、想聊两句——请发到 Discussions，不要开 Issue。
