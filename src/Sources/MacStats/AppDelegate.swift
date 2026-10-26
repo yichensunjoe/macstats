@@ -1033,10 +1033,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    func sendNotification(title: String, body: String) {
+    func sendNotification(title: String, body: String, subtitle: String? = nil) {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
+        if let subtitle, !subtitle.isEmpty {
+            content.subtitle = subtitle
+        }
         if soundEffectsEnabled {
             content.sound = .default
         }
@@ -1404,6 +1407,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             memory: memoryFraction,
             gpu: snapshot.gpu?.utilization,
             diskUsed: snapshot.disk.usedFraction,
+            // topCPU 是采样层在按内存截断之前算好的；历史分钟点最多留 3 条。
+            topProcesses: Array(snapshot.topCPU.prefix(3)),
             at: snapshot.timestamp
         )
         if flushed {
@@ -1416,10 +1421,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let memoryFraction = snapshot.memory.total > 0
             ? Double(snapshot.memory.used) / Double(snapshot.memory.total)
             : 0
+        // CPU 元凶用采样层的 topCPU；内存元凶必须显式按 .memory 排名，不能复用 CPU 第一名。
+        let topMemory = ProcessRanking.attributions(
+            from: snapshot.processes,
+            limit: 1,
+            by: .memory
+        ).first
         guard let event = thresholdEvaluator.evaluate(
             cpu: snapshot.cpu.total,
             memory: memoryFraction,
             diskUsed: snapshot.disk.usedFraction,
+            topCPU: snapshot.topCPU.first,
+            topMemory: topMemory,
             at: snapshot.timestamp
         ) else { return }
 
@@ -1431,7 +1444,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         sendNotification(
             title: title,
-            body: L10n.format(.alertBody, PercentFormat.percent(event.value))
+            body: AlertNotificationText.body(for: event),
+            subtitle: AlertNotificationText.subtitle(for: event)
         )
     }
 
