@@ -23,7 +23,7 @@
 
 ## Instalação
 
-[**Baixar MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (cerca de 2,4 MB, macOS 15+ em Apple Silicon)
+[**Baixar MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (cerca de 2,5 MB, macOS 15+ em Apple Silicon)
 
 1. Descompacte e arraste `MacStats.app` para `/Applications`
 2. Clique com o botão direito em MacStats → “Abrir” e confirme uma vez (**sem notarização**; o motivo e a alternativa pelo terminal estão nas [notas de instalação](../install.md))

@@ -23,7 +23,7 @@
 
 ## 安裝
 
-[**下載 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（約 2.4 MB，macOS 15+ / Apple 晶片）
+[**下載 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（約 2.5 MB，macOS 15+ / Apple 晶片）
 
 1. 解壓縮，把 `MacStats.app` 拖進 `/Applications`
 2. 右鍵 MacStats →「打開」，確認一次（**未公證**，原因與另一種放行方式見[安裝說明](../install.md)）

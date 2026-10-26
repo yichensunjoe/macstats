@@ -25,7 +25,7 @@
 
 ## 下载安装
 
-[**下载 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（约 2.4 MB，macOS 15+ / Apple 芯片）
+[**下载 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（约 2.5 MB，macOS 15+ / Apple 芯片）
 
 > **下载的包叫 MacStats，装好后显示名是 MacS。** Release 里的文件是 `MacStats.zip`，解压出来是 `MacStats.app`；Finder、启动台、菜单栏显示的是 MacS。同一个 App，Bundle ID 仍是 `com.macstats.app`，偏好与已添加的小组件都不受影响。
 

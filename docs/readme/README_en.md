@@ -25,7 +25,7 @@ Formerly MacStats.
 
 ## Install
 
-[**Download MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (about 2.4 MB, macOS 15+ on Apple silicon)
+[**Download MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (about 2.5 MB, macOS 15+ on Apple silicon)
 
 > **The download is called MacStats; the installed app shows up as MacS.** The release file is `MacStats.zip` and it unpacks to `MacStats.app`; Finder, Launchpad and the menu bar show MacS. Same app, and the bundle ID is still `com.macstats.app`, so preferences and widgets you already added are unaffected.
 

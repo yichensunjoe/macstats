@@ -23,7 +23,7 @@
 
 ## 설치
 
-[**MacStats.zip 다운로드**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (약 2.4 MB, macOS 15+ / Apple 실리콘)
+[**MacStats.zip 다운로드**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (약 2.5 MB, macOS 15+ / Apple 실리콘)
 
 1. 압축을 풀고 `MacStats.app`을 `/Applications`로 드래그
 2. MacStats를 오른쪽 클릭 → '열기'로 한 번 확인 (**공증되지 않음**; 이유와 터미널 대안은 [설치 안내](../install.md) 참고)
