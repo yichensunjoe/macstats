@@ -52,7 +52,9 @@ public final class HistoryStore: @unchecked Sendable {
         }
     }
 
-    private struct Bucket {
+    // `fileprivate` 而不是 `private`：CI 的较旧 Swift 不允许从外围类型调用
+    // private 嵌套类型的成员初始化器；fileprivate 仍把 Bucket 限制在本文件内。
+    fileprivate struct Bucket {
         var start: Date
         var cpuSum: Double = 0
         var memorySum: Double = 0
