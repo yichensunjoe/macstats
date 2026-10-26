@@ -147,12 +147,19 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case history24hTitle
     case historyPeakToday
     case historyInsufficient
+    case historyPeakDetailTitle
+    case historyPeakAt
+    case historyPeakProcesses
+    case historyPeakNoProcess
+    case historyPeakGPUNoProcess
+    case historyPeakMemoryFormat
     case thresholdAlerts
     case thresholdAlertsDesc
     case alertCPU
     case alertMemory
     case alertDisk
     case alertBody
+    case alertBodyWithProcess
 
     // Cleanup Tab
     case cleanupRulesSection
@@ -379,7 +386,7 @@ public final class L10n: @unchecked Sendable {
     // MARK: - 词库对照
 
     private static let stringsZh: [L10nKey: String] = [
-        .appName: "系统监视小组件",
+        .appName: "MacS",
         .widgetTitle: "系统监视",
         .settings: "设置",
 
@@ -452,12 +459,19 @@ public final class L10n: @unchecked Sendable {
         .history24hTitle: "过去 24 小时",
         .historyPeakToday: "峰值 %@",
         .historyInsufficient: "刚开始记录，曲线会随使用逐渐补全",
+        .historyPeakDetailTitle: "%@ 峰值",
+        .historyPeakAt: "%@ · %@",
+        .historyPeakProcesses: "当时的进程",
+        .historyPeakNoProcess: "当时未记录进程（0.4 之前的历史）",
+        .historyPeakGPUNoProcess: "GPU 归因暂未记录",
+        .historyPeakMemoryFormat: "内存 %@",
         .thresholdAlerts: "持续高负载提醒",
         .thresholdAlertsDesc: "CPU ≥ 90%%、内存 ≥ 85%% 或磁盘 ≥ 90%% 连续 3 次采样时通知；同一指标 10 分钟内不重复。",
         .alertCPU: "CPU 持续高负载",
         .alertMemory: "内存持续偏高",
         .alertDisk: "磁盘空间不足",
-        .alertBody: "%@ %%，已连续超过阈值",
+        .alertBody: "%@，已连续超过阈值",
+        .alertBodyWithProcess: "%@ · %@",
 
         .cleanupRulesSection: "清理判定策略",
         .idleThreshold: "闲置时间下限",
@@ -560,7 +574,7 @@ public final class L10n: @unchecked Sendable {
         .menuClearWhitelist: "清空白名单",
         .menuOpenActivityMonitor: "打开活动监视器…",
         .menuSettings: "设置…",
-        .menuAbout: "关于系统监视小组件",
+        .menuAbout: "关于 MacS",
         .menuQuit: "退出",
         .menuRefreshNow: "立即刷新",
         .menuSize: "尺寸",
@@ -615,7 +629,7 @@ public final class L10n: @unchecked Sendable {
     ]
 
     private static let stringsEn: [L10nKey: String] = [
-        .appName: "MacStats",
+        .appName: "MacS",
         .widgetTitle: "System Stats",
         .settings: "Settings",
 
@@ -688,12 +702,19 @@ public final class L10n: @unchecked Sendable {
         .history24hTitle: "Last 24 Hours",
         .historyPeakToday: "Peak %@",
         .historyInsufficient: "Just started recording — the curve fills in as you use your Mac",
+        .historyPeakDetailTitle: "%@ peak",
+        .historyPeakAt: "%@ · %@",
+        .historyPeakProcesses: "Processes at that time",
+        .historyPeakNoProcess: "No processes recorded then (history before 0.4)",
+        .historyPeakGPUNoProcess: "GPU attribution not recorded yet",
+        .historyPeakMemoryFormat: "Memory %@",
         .thresholdAlerts: "Sustained Load Alerts",
         .thresholdAlertsDesc: "Notify when CPU ≥ 90%%, memory ≥ 85%%, or disk ≥ 90%% for 3 consecutive samples; each metric repeats at most every 10 minutes.",
         .alertCPU: "Sustained High CPU",
         .alertMemory: "Sustained High Memory",
         .alertDisk: "Low Disk Space",
-        .alertBody: "%@ %%, above the threshold",
+        .alertBody: "%@, above the threshold",
+        .alertBodyWithProcess: "%@ · %@",
 
         .cleanupRulesSection: "Cleanup Thresholds",
         .idleThreshold: "Minimum Idle Time",
@@ -796,7 +817,7 @@ public final class L10n: @unchecked Sendable {
         .menuClearWhitelist: "Clear Whitelist",
         .menuOpenActivityMonitor: "Open Activity Monitor…",
         .menuSettings: "Settings…",
-        .menuAbout: "About MacStats",
+        .menuAbout: "About MacS",
         .menuQuit: "Quit",
         .menuRefreshNow: "Refresh Now",
         .menuSize: "Size",

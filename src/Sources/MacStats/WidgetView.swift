@@ -44,6 +44,8 @@ struct WidgetView: View {
     var onCleanup: () -> Void = {}
 
     @State private var hovering = false
+    /// 当前打开的峰值详情；nil 表示没有 popover。点空白或再次点击同一个峰值都会回到 nil。
+    @State private var selectedPeak: HistoryPeak?
 
     private var data: WidgetData { model.data }
 
@@ -281,17 +283,17 @@ struct WidgetView: View {
             if data.history.count >= 2 {
                 HStack(spacing: 10) {
                     historySeries(
-                        title: L10n.t(.cpu),
+                        metric: .cpu,
                         values: data.history.map(\.cpu),
                         color: Theme.cpu
                     )
                     historySeries(
-                        title: L10n.t(.memory),
+                        metric: .memory,
                         values: data.history.map(\.memory),
                         color: Theme.memory
                     )
                     historySeries(
-                        title: L10n.t(.gpu),
+                        metric: .gpu,
                         values: data.history.compactMap(\.gpu),
                         color: Theme.gpu
                     )
@@ -306,23 +308,72 @@ struct WidgetView: View {
         }
     }
 
-    private func historySeries(title: String, values: [Double], color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+    private func historySeries(metric: HistoryMetric, values: [Double], color: Color) -> some View {
+        // 峰值统一走 HistoryAnalysis，不在视图里再写一遍「取最大值」。
+        let peak = HistoryAnalysis.peak(in: data.history, metric: metric)
+        return VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
                 Circle().fill(color).frame(width: 4.5, height: 4.5)
-                Text(title)
+                Text(historyMetricTitle(metric))
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(Theme.secondaryText)
                 Spacer(minLength: 2)
-                Text(values.isEmpty ? "—" : L10n.format(.historyPeakToday, PercentFormat.percent(values.max() ?? 0)))
-                    .font(.system(size: 8.5, weight: .medium).monospacedDigit())
-                    .foregroundStyle(Theme.tertiaryText)
-                    .lineLimit(1)
+                if let peak {
+                    // 外观与原文字一致：字号/颜色/行数都不变，只多一个点击动作。
+                    Button(action: { togglePeak(peak) }) {
+                        Text(L10n.format(.historyPeakToday, PercentFormat.percent(peak.value)))
+                            .font(.system(size: 8.5, weight: .medium).monospacedDigit())
+                            .foregroundStyle(Theme.tertiaryText)
+                            .lineLimit(1)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .popover(isPresented: peakPopoverBinding(for: metric), arrowEdge: .bottom) {
+                        if let selected = selectedPeak, selected.metric == metric {
+                            PeakDetailView(peak: selected)
+                        }
+                    }
+                } else {
+                    // 没有 GPU 计数器时保持原来的「—」，不给假按钮。
+                    Text("—")
+                        .font(.system(size: 8.5, weight: .medium).monospacedDigit())
+                        .foregroundStyle(Theme.tertiaryText)
+                        .lineLimit(1)
+                }
             }
             Sparkline(points: values, color: color)
                 .frame(height: 22)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func historyMetricTitle(_ metric: HistoryMetric) -> String {
+        switch metric {
+        case .cpu: L10n.t(.cpu)
+        case .memory: L10n.t(.memory)
+        case .gpu: L10n.t(.gpu)
+        }
+    }
+
+    /// 再点同一个峰值关闭；点另一个峰值则切换。
+    private func togglePeak(_ peak: HistoryPeak) {
+        if selectedPeak?.metric == peak.metric {
+            selectedPeak = nil
+        } else {
+            selectedPeak = peak
+        }
+    }
+
+    /// popover 显隐跟着 selectedPeak 走：点空白处系统会置 false，这里同步清空。
+    private func peakPopoverBinding(for metric: HistoryMetric) -> Binding<Bool> {
+        Binding(
+            get: { selectedPeak?.metric == metric },
+            set: { presented in
+                if !presented, selectedPeak?.metric == metric {
+                    selectedPeak = nil
+                }
+            }
+        )
     }
 
     private var header: some View {
@@ -631,5 +682,103 @@ struct WidgetView: View {
         }
         return L10n.format(.batteryPercent, percent)
     }
+}
 
+// MARK: - 峰值详情浮层
+
+/// 峰值详情浮层：哪个指标、几点、多高，以及当时 CPU 最高的几个进程。
+///
+/// 数据来自 HistorySample.topProcesses（B1 起才写入）；0.4 之前的历史没有进程，
+/// 这里必须如实说「未记录」，不能用当前进程列表补——那会把归因变成编造。
+private struct PeakDetailView: View {
+    var peak: HistoryPeak
+
+    private var metricTitle: String {
+        switch peak.metric {
+        case .cpu: L10n.t(.cpu)
+        case .memory: L10n.t(.memory)
+        case .gpu: L10n.t(.gpu)
+        }
+    }
+
+    private var timeText: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: peak.sample.timestamp)
+    }
+
+    private var processes: [ProcessAttribution] { peak.sample.topProcesses ?? [] }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text(L10n.format(.historyPeakDetailTitle, metricTitle))
+                .font(.system(size: 11, weight: .semibold))
+            Text(L10n.format(.historyPeakAt, timeText, PercentFormat.percent(peak.value)))
+                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                .foregroundStyle(.secondary)
+
+            if peak.metric == .gpu {
+                // GPU 归因这一轮不做，明说比留空更可信。
+                Text(L10n.t(.historyPeakGPUNoProcess))
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if processes.isEmpty {
+                Text(L10n.t(.historyPeakNoProcess))
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(L10n.t(.historyPeakProcesses))
+                    .font(.system(size: 8.5, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(Array(processes.prefix(3).enumerated()), id: \.offset) { _, process in
+                        PeakProcessRow(process: process)
+                    }
+                }
+            }
+        }
+        .padding(11)
+        .frame(width: 208, alignment: .leading)
+    }
+}
+
+/// 峰值浮层里的一行进程：名字 + CPU% + 内存，附一句人话说明（有词条时）。
+private struct PeakProcessRow: View {
+    var process: ProcessAttribution
+
+    private var summary: String? {
+        // 只取第一句：浮层窄，完整说明留给清理对话框。
+        let text = ProcessGlossary.explain(name: process.name).summary
+        guard !text.isEmpty else { return nil }
+        if let stop = text.firstIndex(where: { $0 == "。" || $0 == "." }) {
+            return String(text[...stop])
+        }
+        return text
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 4) {
+                Text(process.name.isEmpty ? "—" : process.name)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .lineLimit(1)
+                Spacer(minLength: 2)
+                Text(PercentFormat.processCPU(process.cpu))
+                    .font(.system(size: 9.5, weight: .semibold).monospacedDigit())
+                Text(L10n.format(.historyPeakMemoryFormat, ByteFormat.memory(process.memory)))
+                    .font(.system(size: 9, weight: .regular).monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            if let summary {
+                Text(summary)
+                    .font(.system(size: 8, weight: .regular))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
 }

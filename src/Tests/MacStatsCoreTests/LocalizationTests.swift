@@ -206,4 +206,106 @@ final class LocalizationTests: XCTestCase {
             }
         }
     }
+    // MARK: - B4 峰值详情
+
+    /// B4：峰值浮层用到的 6 个 key，中英都必须有非空文案，且模板占位符一致。
+    func testHistoryPeakKeysExistInBothLanguages() {
+        let keys: [L10nKey] = [
+            .historyPeakDetailTitle,
+            .historyPeakAt,
+            .historyPeakProcesses,
+            .historyPeakNoProcess,
+            .historyPeakGPUNoProcess,
+            .historyPeakMemoryFormat
+        ]
+        for key in keys {
+            XCTAssertTrue(L10nKey.allCases.contains(key), "missing key \(key)")
+            for lang in [ResolvedLanguage.zhHans, ResolvedLanguage.en] {
+                let text = L10n.string(key, lang: lang)
+                XCTAssertFalse(text.isEmpty, "\(lang) missing translation for \(key)")
+                XCTAssertNotEqual(text, key.rawValue, "\(lang) fell back to raw key for \(key)")
+            }
+        }
+
+        // 占位符数量要和调用点一致，否则 String(format:) 会截断参数。
+        XCTAssertEqual(L10n.string(.historyPeakDetailTitle, lang: .zhHans).components(separatedBy: "%@").count - 1, 1)
+        XCTAssertEqual(L10n.string(.historyPeakAt, lang: .zhHans).components(separatedBy: "%@").count - 1, 2)
+        XCTAssertEqual(L10n.string(.historyPeakMemoryFormat, lang: .en).components(separatedBy: "%@").count - 1, 1)
+    }
+
+    func testHistoryPeakFormattedCopy() {
+        L10n.shared.setLanguage(.zhHans)
+        XCTAssertEqual(L10n.format(.historyPeakDetailTitle, "CPU"), "CPU 峰值")
+        XCTAssertEqual(L10n.format(.historyPeakAt, "15:20", "92%"), "15:20 · 92%")
+        XCTAssertEqual(L10n.t(.historyPeakProcesses), "当时的进程")
+        XCTAssertEqual(L10n.t(.historyPeakNoProcess), "当时未记录进程（0.4 之前的历史）")
+        XCTAssertEqual(L10n.t(.historyPeakGPUNoProcess), "GPU 归因暂未记录")
+        XCTAssertEqual(L10n.format(.historyPeakMemoryFormat, "1.50 GB"), "内存 1.50 GB")
+
+        L10n.shared.setLanguage(.en)
+        XCTAssertEqual(L10n.format(.historyPeakDetailTitle, "Memory"), "Memory peak")
+        XCTAssertEqual(L10n.format(.historyPeakAt, "15:20", "92%"), "15:20 · 92%")
+        XCTAssertEqual(L10n.t(.historyPeakProcesses), "Processes at that time")
+        XCTAssertEqual(L10n.t(.historyPeakNoProcess), "No processes recorded then (history before 0.4)")
+        XCTAssertEqual(L10n.t(.historyPeakGPUNoProcess), "GPU attribution not recorded yet")
+        XCTAssertEqual(L10n.format(.historyPeakMemoryFormat, "1.50 GB"), "Memory 1.50 GB")
+    }
+
+    /// ADR H2：对外显示名统一成 MacS，但小组件画廊名「系统监视」保持不变。
+    func testAppDisplayNameIsMacS() {
+        for lang in [ResolvedLanguage.zhHans, ResolvedLanguage.en] {
+            XCTAssertEqual(L10n.string(.appName, lang: lang), "MacS")
+            XCTAssertTrue(L10n.string(.menuAbout, lang: lang).contains("MacS"))
+        }
+
+        L10n.shared.setLanguage(.zhHans)
+        XCTAssertEqual(L10n.t(.appName), "MacS")
+        XCTAssertEqual(L10n.t(.menuAbout), "关于 MacS")
+        // 小组件库里的名字不是应用名，保持「系统监视」。
+        XCTAssertEqual(L10n.t(.widgetTitle), "系统监视")
+
+        L10n.shared.setLanguage(.en)
+        XCTAssertEqual(L10n.t(.appName), "MacS")
+        XCTAssertEqual(L10n.t(.menuAbout), "About MacS")
+        XCTAssertEqual(L10n.t(.widgetTitle), "System Stats")
+    }
+    // MARK: - B5 告警通知文案
+
+    /// B5：有 culprit 的正文模板。key 由 B4 提供，B5 用 L10n.format 替换内联 String(format:)。
+    func testAlertBodyWithProcessKeyExistsInBothLanguages() {
+        for lang in [ResolvedLanguage.zhHans, ResolvedLanguage.en] {
+            let template = L10n.string(.alertBodyWithProcess, lang: lang)
+            XCTAssertFalse(template.isEmpty, "\(lang) missing alertBodyWithProcess")
+            XCTAssertEqual(template, "%@ · %@")
+            XCTAssertEqual(
+                String(format: template, "92%", "Xcode"),
+                "92% · Xcode",
+                "\(lang) alertBodyWithProcess 渲染结果不对"
+            )
+        }
+    }
+
+    /// 旧 alertBody 模板只收一个参数（调用方传的是已格式化的 "92%"）。
+    /// 模板里多写一个 %% 会渲染成「92% %」，这里是回归断言。
+    func testAlertBodyTemplateTakesSingleFormattedValue() {
+        for lang in [ResolvedLanguage.zhHans, ResolvedLanguage.en] {
+            let template = L10n.string(.alertBody, lang: lang)
+            XCTAssertEqual(
+                template.components(separatedBy: "%@").count - 1, 1,
+                "\(lang) alertBody 必须只有一个 %@ 占位符"
+            )
+
+            // 模板本身不该再带字面百分号转义：那是给「传入 0.92 再乘 100」的旧用法留的。
+            XCTAssertFalse(template.contains("%%"), "\(lang) alertBody 模板仍含 %%：\(template)")
+
+            let rendered = String(format: template, "92%")
+            XCTAssertTrue(rendered.contains("92%"), "\(lang) 应包含已格式化的百分比：\(rendered)")
+            XCTAssertFalse(rendered.contains("92% %"), "\(lang) 百分比后多了空格和 %：\(rendered)")
+        }
+
+        L10n.shared.setLanguage(.zhHans)
+        XCTAssertEqual(L10n.format(.alertBody, "92%"), "92%，已连续超过阈值")
+        L10n.shared.setLanguage(.en)
+        XCTAssertEqual(L10n.format(.alertBody, "92%"), "92%, above the threshold")
+    }
 }
