@@ -49,6 +49,8 @@ public final class SystemSampler: @unchecked Sendable {
     private var lastProcessScan: UInt64?
     private var cachedProcesses: [ProcessStatus] = []
     private var cachedEnergy: EnergyStatus = .zero
+    // top CPU 在按内存截断前算，缓存路径必须一起带出，否则节流期间归因会闪回空。
+    private var cachedTopCPU: [ProcessAttribution] = []
 
     // 卷容量（statfs）变化很慢，没必要跟着每秒采样走。
     private var cachedVolume: (total: UInt64, free: UInt64)?
@@ -100,7 +102,7 @@ public final class SystemSampler: @unchecked Sendable {
         let disk = sampleDisk(elapsed: elapsed, now: now)
         let network = sampleNetwork(elapsed: elapsed)
         let shouldIncludeProcesses = includeProcesses ?? config.includeProcesses
-        let (processes, energy) = sampleProcessesIfDue(now: now, elapsed: elapsed, includeProcesses: shouldIncludeProcesses)
+        let (processes, energy, topCPU) = sampleProcessesIfDue(now: now, elapsed: elapsed, includeProcesses: shouldIncludeProcesses)
         let gpu = GPUReader.read()
 
         return MetricSnapshot(
@@ -113,7 +115,8 @@ public final class SystemSampler: @unchecked Sendable {
             disk: disk,
             network: network,
             processes: processes,
-            gpu: gpu
+            gpu: gpu,
+            topCPUProcesses: topCPU
         )
     }
 
@@ -418,16 +421,20 @@ public final class SystemSampler: @unchecked Sendable {
 
     // MARK: - Energy & processes
 
-    /// 到点才真正扫进程表，其余时刻复用上一次的进程列表与能耗。
-    private func sampleProcessesIfDue(now: UInt64, elapsed: TimeInterval, includeProcesses: Bool) -> (processes: [ProcessStatus], energy: EnergyStatus) {
+    /// 到点才真正扫进程表，其余时刻复用上一次的进程列表、能耗与 top CPU。
+    private func sampleProcessesIfDue(
+        now: UInt64,
+        elapsed: TimeInterval,
+        includeProcesses: Bool
+    ) -> (processes: [ProcessStatus], energy: EnergyStatus, topCPU: [ProcessAttribution]) {
         guard includeProcesses else {
-            return ([], sampleEnergy(entries: [], elapsed: elapsed))
+            return ([], sampleEnergy(entries: [], elapsed: elapsed), [])
         }
         let interval = config.processInterval
         if interval > 0, let last = lastProcessScan {
             let sinceLast = Double(now &- last) / 1_000_000_000
             if sinceLast < interval {
-                return (cachedProcesses, cachedEnergy)
+                return (cachedProcesses, cachedEnergy, cachedTopCPU)
             }
         }
         // 首次扫描没有上一帧，用调用方的 elapsed；之后用两次扫描之间的真实间隔，
@@ -442,10 +449,13 @@ public final class SystemSampler: @unchecked Sendable {
         let result = sampleProcesses(elapsed: scanElapsed)
         cachedProcesses = result.processes
         cachedEnergy = result.energy
+        cachedTopCPU = result.topCPU
         return result
     }
 
-    private func sampleProcesses(elapsed: TimeInterval) -> (processes: [ProcessStatus], energy: EnergyStatus) {
+    private func sampleProcesses(
+        elapsed: TimeInterval
+    ) -> (processes: [ProcessStatus], energy: EnergyStatus, topCPU: [ProcessAttribution]) {
         let pids = Self.allPIDs()
         var raw: [pid_t: ProcessRaw] = [:]
         raw.reserveCapacity(pids.count)
@@ -487,9 +497,11 @@ public final class SystemSampler: @unchecked Sendable {
             nameCache = nameCache.filter { raw[$0.key] != nil }
         }
 
+        // 必须在按内存截断之前取 top CPU：CPU 高但内存小的进程可能不在 processes 里。
+        let topCPU = ProcessRanking.attributions(from: records, limit: 8, by: .cpu)
         let sorted = records.sorted { $0.memory > $1.memory }
         let limited = Array(sorted.prefix(config.processLimit))
-        return (limited, sampleEnergy(entries: energyEntries, elapsed: elapsed))
+        return (limited, sampleEnergy(entries: energyEntries, elapsed: elapsed), topCPU)
     }
 
     private func sampleEnergy(

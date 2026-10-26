@@ -305,6 +305,9 @@ public struct MetricSnapshot: Codable, Sendable, Equatable {
     public var processes: [ProcessStatus]
     /// GPU 读数；老版本写下的快照没有这个字段，解码为 nil。
     public var gpu: GPUStatus?
+    /// 按 CPU 排序、已按名字聚合的 top N（在按内存截断之前算），只用于归因。
+    /// Optional 是为了旧 JSON 仍能解码；新采样会填。
+    public var topCPUProcesses: [ProcessAttribution]?
 
     public init(
         timestamp: Date,
@@ -316,7 +319,8 @@ public struct MetricSnapshot: Codable, Sendable, Equatable {
         disk: DiskStatus,
         network: NetworkStatus,
         processes: [ProcessStatus],
-        gpu: GPUStatus? = nil
+        gpu: GPUStatus? = nil,
+        topCPUProcesses: [ProcessAttribution]? = nil
     ) {
         self.timestamp = timestamp
         self.hostName = hostName
@@ -328,7 +332,11 @@ public struct MetricSnapshot: Codable, Sendable, Equatable {
         self.network = network
         self.processes = processes
         self.gpu = gpu
+        self.topCPUProcesses = topCPUProcesses
     }
+
+    /// 读取便利：旧快照/未采进程时为空数组。不参与 Codable。
+    public var topCPU: [ProcessAttribution] { topCPUProcesses ?? [] }
 
     /// 速率类指标在一个滑动窗口内的均值；内存是瞬时量，不参与平均。
     public func applying(_ window: WindowAverages) -> MetricSnapshot {
@@ -355,6 +363,7 @@ public struct MetricSnapshot: Codable, Sendable, Equatable {
         energy: .zero,
         disk: .zero,
         network: .zero,
-        processes: []
+        processes: [],
+        topCPUProcesses: nil
     )
 }

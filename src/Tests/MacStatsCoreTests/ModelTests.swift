@@ -207,3 +207,64 @@ final class SystemSamplerTests: XCTestCase {
     }
 }
 
+/// `MetricSnapshot` 的旧 JSON 兼容：0.4 之前的 `widget-feed.json` 没有
+/// `topCPUProcesses` 键，必须仍能解码，且 `topCPU` 为空。
+final class MetricSnapshotCompatibilityTests: XCTestCase {
+    /// 0.4 之前的真实形状：没有 topCPUProcesses，GPU 键也可能整体缺席。
+    private let legacyJSON = #"""
+    {
+      "timestamp": 800000000,
+      "hostName": "Mac",
+      "uptime": 3600,
+      "cpu": {
+        "total": 0.42, "user": 0.3, "system": 0.12, "idle": 0.58,
+        "cores": [0.4, 0.44], "loadAverage": [1.5, 1.2, 1.1]
+      },
+      "memory": {
+        "total": 68719476736, "used": 42949672960, "app": 32212254720,
+        "wired": 4294967296, "compressed": 4294967296, "cachedFiles": 18253611008,
+        "free": 7516192768, "swapUsed": 1000000000, "swapTotal": 2000000000,
+        "pressure": "warning", "pressureScore": 0.55
+      },
+      "energy": {
+        "watts": 18.5, "isEstimated": false, "batteryPercent": 80,
+        "isCharging": true, "isOnBattery": false, "minutesRemaining": null
+      },
+      "disk": {
+        "readBytesPerSecond": 1000000, "writeBytesPerSecond": 500000,
+        "totalReadBytes": 1, "totalWrittenBytes": 2, "capacity": 3, "free": 1
+      },
+      "network": {
+        "bytesInPerSecond": 2000000, "bytesOutPerSecond": 300000,
+        "totalBytesIn": 10, "totalBytesOut": 20, "interfaceCount": 1,
+        "activeInterfaces": ["en0"]
+      },
+      "processes": [
+        {"pid": 42, "name": "WindowServer", "cpu": 0.1, "memory": 1046478848, "energyWatts": 1.2}
+      ]
+    }
+    """#
+
+    func testLegacySnapshotJSONWithoutTopCPUProcessesDecodes() throws {
+        let snapshot = try JSONDecoder().decode(MetricSnapshot.self, from: Data(legacyJSON.utf8))
+        XCTAssertEqual(snapshot.hostName, "Mac")
+        XCTAssertEqual(snapshot.cpu.total, 0.42, accuracy: 0.000_001)
+        XCTAssertEqual(snapshot.processes.map(\.name), ["WindowServer"])
+        XCTAssertNil(snapshot.gpu)
+        XCTAssertNil(snapshot.topCPUProcesses, "旧 JSON 没有 topCPUProcesses 键，解码为 nil")
+        XCTAssertTrue(snapshot.topCPU.isEmpty, "旧快照的 topCPU 为空数组，不伪造进程")
+    }
+
+    /// 旧 JSON 里带 GPU 键（0.3 中后期）但没有 topCPUProcesses，同样要能解码。
+    func testLegacySnapshotJSONWithGPUButWithoutTopCPUProcessesDecodes() throws {
+        let json = legacyJSON.replacingOccurrences(
+            of: #""processes": ["#,
+            with: #""gpu": {"utilization": 0.37, "coreCount": 20, "model": "Apple M5 Pro"}, "processes": ["#
+        )
+        let snapshot = try JSONDecoder().decode(MetricSnapshot.self, from: Data(json.utf8))
+        XCTAssertEqual(snapshot.gpu?.utilization ?? -1, 0.37, accuracy: 0.000_001)
+        XCTAssertNil(snapshot.topCPUProcesses)
+        XCTAssertTrue(snapshot.topCPU.isEmpty)
+    }
+}
+
