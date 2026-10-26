@@ -66,6 +66,12 @@ public final class HistoryStore: @unchecked Sendable {
         /// 用户问的是「那阵卡是谁」，峰值比一分钟平均更接近元凶；平均会被空闲秒稀释。
         private var attributionPeaks: [String: (cpu: Double, memory: UInt64)] = [:]
 
+        // 合成成员初始化器的访问级别会被 private 的 attributionPeaks 拉到 private；
+        // 显式给一个 fileprivate init，旧 Swift 也能从外围类型构造。
+        fileprivate init(start: Date) {
+            self.start = start
+        }
+
         mutating func add(
             cpu: Double,
             memory: Double,
