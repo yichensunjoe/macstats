@@ -8,18 +8,37 @@
 
 **CPU、内存、GPU、能耗、磁盘、网络，一眼看完；口径逐项对齐活动监视器。**
 
-[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#快速开始)
+[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#下载安装)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#实现方式)
 [![tests](https://img.shields.io/badge/tests-91%20passing-3fb950?style=flat-square)](#命令)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#实现方式)
 
-[快速开始](#快速开始) · [能看什么](#能看什么) · [两种形态](#两种形态) · [口径对齐](#和活动监视器对到什么程度) · [常见问题](#常见问题) · [限制](#已知限制)
+[下载安装](#下载安装) · [能看什么](#能看什么) · [两种形态](#两种形态) · [口径对齐](#和活动监视器对到什么程度) · [常见问题](#常见问题) · [限制](#已知限制)
 
-`bash scripts/bundle.sh`
+**[下载 MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · 拖进 `/Applications`，首次右键 →「打开」
 
 </div>
 
 ---
+
+## 下载安装
+
+[**下载 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（约 2.2 MB，macOS 15+ / Apple 芯片）
+
+1. 解压，把 `MacStats.app` 拖进 `/Applications`
+2. 右键 MacStats →「打开」，确认一次（**未公证**，原因与另一种放行方式见[安装说明](docs/install.md)）
+3. 面板出现在桌面；想要系统小组件，右键桌面 →「编辑小组件」→ 搜「系统监视」
+
+```bash
+# 可选：清掉下载隔离属性，之后双击即可
+xattr -dr com.apple.quarantine /Applications/MacStats.app
+
+# 或者用 Homebrew
+brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
+brew install --cask macstats
+```
+
+下载校验：`shasum -a 256 -c MacStats.zip.sha256`（校验文件在 Release 里）。
 
 <p align="center">
   <img src="docs/live-window.png" alt="MacStats 桌面面板：CPU、内存、GPU、能耗、磁盘、网络与内存占用最高的进程" width="460" />
@@ -40,15 +59,18 @@ macOS 自带的活动监视器信息够全，但它是个窗口：要开、要�
 > [!NOTE]
 > 桌面悬浮面板开箱即用。系统「小组件库」里的那份需要一份有效的 Apple Development 签名，并且必须装进 `/Applications`——这两条是 `chronod` 的硬要求，不是可选项，详见[系统小组件](#系统小组件)。
 
-## 快速开始
+## 从源码构建
 
-需要 macOS 15 或更新、Xcode 命令行工具（Swift 6）。没有第三方依赖，也不需要 Xcode 工程文件。
+已经用上面的 zip 装好就不用看这一节。需要 macOS 15 或更新、Xcode 命令行工具（Swift 6）。没有第三方依赖，也不需要 Xcode 工程文件。
 
 ```bash
 git clone https://github.com/yichensunjoe/macstats.git
 cd macstats
 bash scripts/bundle.sh          # 构建 + 打包 + 安装到 /Applications + 注册小组件扩展
 open /Applications/MacStats.app
+
+# 只出可分发包、不安装（→ dist/MacStats.zip）
+bash scripts/bundle.sh --archive
 ```
 
 首次打开会在菜单栏出现一个 `CPU · 内存` 的小读数，桌面上出现面板。

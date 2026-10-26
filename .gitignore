@@ -1,6 +1,7 @@
 .build/
 .build-debug/
 MacStats.app/
+dist/
 .DS_Store
 *.xcodeproj
 xcuserdata/

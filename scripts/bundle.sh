@@ -3,7 +3,11 @@
 # 只依赖 Xcode Command Line Tools（SwiftPM + 手写 Info.plist），不需要 Xcode 工程。
 #
 # 用法：
-#   scripts/bundle.sh    打包到 <项目>/MacStats.app，再安装到 /Applications 并注册扩展
+#   scripts/bundle.sh              打包到 <项目>/MacStats.app，再安装到 /Applications 并注册扩展
+#   scripts/bundle.sh --archive    只出可分发包：dist/MacStats.zip + .sha256，不安装、不启动
+#
+# 版本取自仓库根的 VERSION 文件，可用 MACSTATS_VERSION / MACSTATS_BUILD 覆盖；
+# 产物目录可用 MACSTATS_DIST 覆盖（默认 <项目>/dist）。
 #
 # 为什么必须装到 /Applications：chronod 只从系统应用目录发现小组件宿主，
 # 放在 ~/Applications 或项目目录里会被记成 "Ignoring restricted or unknown extension"。
@@ -17,6 +21,28 @@ SRC="$ROOT/src"
 APP="$ROOT/MacStats.app"
 INSTALLED=/Applications/MacStats.app
 WIDGET_ID="com.macstats.app.widget"
+
+# 版本单一来源：仓库根的 VERSION。主程序与 appex 必须写同一个值，否则
+# chronod 可能把扩展当成旧版本缓存起来。
+VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION" 2>/dev/null || true)"
+VERSION="${MACSTATS_VERSION:-${VERSION:-0.1}}"
+BUILD="${MACSTATS_BUILD:-2}"
+DIST="${MACSTATS_DIST:-$ROOT/dist}"
+
+ARCHIVE=0
+for arg in "$@"; do
+  case "$arg" in
+    --archive) ARCHIVE=1 ;;
+    -h|--help)
+      sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *)
+      echo "未知参数：$arg（可用：--archive）" >&2
+      exit 2
+      ;;
+  esac
+done
 
 cd "$SRC"
 echo "==> swift build -c release"
@@ -38,7 +64,7 @@ cp "$BIN" "$APP/Contents/MacOS/MacStats"
 # 图标：Finder / 关于面板 / 活动监视器都读这里，名字与 Info.plist 的 CFBundleIconFile 对应。
 cp "$ROOT/assets/MacStats.icns" "$APP/Contents/Resources/MacStats.icns"
 
-cat > "$APP/Contents/Info.plist" <<'PLIST'
+cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -49,8 +75,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>CFBundleExecutable</key><string>MacStats</string>
   <key>CFBundleIconFile</key><string>MacStats.icns</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleVersion</key><string>1</string>
-  <key>CFBundleShortVersionString</key><string>0.1</string>
+  <key>CFBundleVersion</key><string>$BUILD</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleSupportedPlatforms</key><array><string>MacOSX</string></array>
   <key>LSMinimumSystemVersion</key><string>15.0</string>
@@ -77,8 +103,8 @@ cat > "$APPEX/Contents/Info.plist" <<PLIST
   <key>CFBundleIdentifier</key><string>$WIDGET_ID</string>
   <key>CFBundleExecutable</key><string>MacStatsWidget</string>
   <key>CFBundlePackageType</key><string>XPC!</string>
-  <key>CFBundleVersion</key><string>1</string>
-  <key>CFBundleShortVersionString</key><string>0.1</string>
+  <key>CFBundleVersion</key><string>$BUILD</string>
+  <key>CFBundleShortVersionString</key><string>$VERSION</string>
   <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
   <key>CFBundleSupportedPlatforms</key><array><string>MacOSX</string></array>
   <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
@@ -103,6 +129,26 @@ else
   echo "==> 没有代码签名身份，先做 ad-hoc 签名"
   codesign --force --deep -s - "$APP" >/dev/null 2>&1 || true
   SIGNED=0
+fi
+
+if [ "$ARCHIVE" = "1" ]; then
+  echo "==> 校验签名"
+  codesign --verify --deep --strict --verbose=2 "$APP"
+
+  mkdir -p "$DIST"
+  ZIP="$DIST/MacStats.zip"
+  rm -f "$ZIP" "$ZIP.sha256"
+  echo "==> 归档 $ZIP"
+  # --keepParent 让解压出来就是 MacStats.app，而不是把内容散在下载目录。
+  ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+  ( cd "$DIST" && shasum -a 256 "MacStats.zip" | tee "MacStats.zip.sha256" )
+
+  echo "==> 产物"
+  ls -lh "$ZIP"
+  echo "==> Gatekeeper 评估（没有 Developer ID 时必然 rejected，属预期；见 docs/install.md）"
+  spctl -a -vv "$APP" 2>&1 || true
+  echo "==> 完成（未安装）：$ZIP"
+  exit 0
 fi
 
 LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister

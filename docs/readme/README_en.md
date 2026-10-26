@@ -8,18 +8,37 @@
 
 **CPU, memory, GPU, energy, disk and network at a glance — every number matched to Activity Monitor.**
 
-[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#quick-start)
+[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#install)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#how-it-works)
 [![tests](https://img.shields.io/badge/tests-91%20passing-3fb950?style=flat-square)](#commands)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#how-it-works)
 
-[Quick start](#quick-start) · [What it shows](#what-it-shows) · [Two surfaces](#two-surfaces) · [Accuracy](#how-close-it-gets-to-activity-monitor) · [FAQ](#faq) · [Limitations](#known-limitations)
+[Install](#install) · [What it shows](#what-it-shows) · [Two surfaces](#two-surfaces) · [Accuracy](#how-close-it-gets-to-activity-monitor) · [FAQ](#faq) · [Limitations](#known-limitations)
 
-`bash scripts/bundle.sh`
+**[Download MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · drag it into `/Applications`, then right-click → Open once
 
 </div>
 
 ---
+
+## Install
+
+[**Download MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (about 2.2 MB, macOS 15+ on Apple silicon)
+
+1. Unzip it and drag `MacStats.app` into `/Applications`
+2. Right-click MacStats → Open once. The build is **signed but not notarized**; see [install notes](../install.md) for why, and for the terminal alternative
+3. The panel appears on the desktop. For the WidgetKit widget: right-click the desktop → Edit Widgets → search “MacStats”
+
+```bash
+# Optional: clear the download quarantine once, then double-click works
+xattr -dr com.apple.quarantine /Applications/MacStats.app
+
+# Or use Homebrew
+brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
+brew install --cask macstats
+```
+
+Verify the download with `shasum -a 256 -c MacStats.zip.sha256` (the checksum is attached to the release).
 
 <p align="center">
   <img src="../live-window.png" alt="MacStats desktop panel: CPU, memory, GPU, energy, disk, network and the top three processes by memory" width="460" />
@@ -40,15 +59,18 @@ It is deliberately not a bigger dashboard. The metrics are the five from Activit
 > [!NOTE]
 > The floating panel works out of the box. The copy in the system widget gallery needs a valid Apple Development signature and must be installed in `/Applications` — both are hard requirements of `chronod`, not preferences. See [Widget extension](#widget-extension).
 
-## Quick start
+## Build from source
 
-Requires macOS 15 or newer and the Xcode command line tools (Swift 6). No third-party dependencies, no Xcode project file.
+Skip this if you installed from the zip. Requires macOS 15 or newer and the Xcode command line tools (Swift 6). No third-party dependencies, no Xcode project file.
 
 ```bash
 git clone https://github.com/yichensunjoe/macstats.git
 cd macstats
 bash scripts/bundle.sh          # build + bundle + install into /Applications + register the widget
 open /Applications/MacStats.app
+
+# Package only, no install (→ dist/MacStats.zip)
+bash scripts/bundle.sh --archive
 ```
 
 On first launch a small `CPU · Memory` readout appears in the menu bar and the panel shows up on the desktop.
