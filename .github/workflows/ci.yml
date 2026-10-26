@@ -43,7 +43,5 @@ jobs:
           unzip -t dist/MacStats.zip
           (cd dist && shasum -a 256 -c MacStats.zip.sha256)
 
-      # TODO: D2 合并后、0.4 发布前必须去掉 continue-on-error（check-docs.py 由 D2 产出）。
       - name: Docs consistency
-        continue-on-error: true
         run: python3 scripts/check-docs.py
