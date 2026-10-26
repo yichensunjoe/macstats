@@ -9,13 +9,24 @@ public struct HistorySample: Codable, Sendable, Equatable {
     public var gpu: Double?
     /// 启动盘已用比例，用于磁盘阈值告警。
     public var diskUsed: Double
+    /// 该分钟 CPU 最高的最多 3 个进程；0.4 之前写下的历史没有这个键，解码为 nil。
+    /// 必须是 optional：旧 JSONL 缺键时合成的 Decodable 才会走 `decodeIfPresent`。
+    public var topProcesses: [ProcessAttribution]?
 
-    public init(timestamp: Date, cpu: Double, memory: Double, gpu: Double?, diskUsed: Double) {
+    public init(
+        timestamp: Date,
+        cpu: Double,
+        memory: Double,
+        gpu: Double?,
+        diskUsed: Double,
+        topProcesses: [ProcessAttribution]? = nil
+    ) {
         self.timestamp = timestamp
         self.cpu = cpu
         self.memory = memory
         self.gpu = gpu
         self.diskUsed = diskUsed
+        self.topProcesses = topProcesses
     }
 }
 
@@ -49,8 +60,17 @@ public final class HistoryStore: @unchecked Sendable {
         var gpuCount: Int = 0
         var diskUsedSum: Double = 0
         var count: Int = 0
+        /// 该分钟内每个进程名的峰值。先合并同一秒的重复进程，再取峰值——
+        /// 用户问的是「那阵卡是谁」，峰值比一分钟平均更接近元凶；平均会被空闲秒稀释。
+        private var attributionPeaks: [String: (cpu: Double, memory: UInt64)] = [:]
 
-        mutating func add(cpu: Double, memory: Double, gpu: Double?, diskUsed: Double) {
+        mutating func add(
+            cpu: Double,
+            memory: Double,
+            gpu: Double?,
+            diskUsed: Double,
+            topProcesses: [ProcessAttribution] = []
+        ) {
             cpuSum += cpu
             memorySum += memory
             diskUsedSum += diskUsed
@@ -59,6 +79,30 @@ public final class HistoryStore: @unchecked Sendable {
                 gpuCount += 1
             }
             count += 1
+            mergeAttributions(topProcesses)
+        }
+
+        /// 1. 同一秒内的同名进程先合并：cpu 求和、memory 求和；
+        /// 2. 再对每个名字取分钟内的峰值：cpu / memory 各自取 max。
+        private mutating func mergeAttributions(_ processes: [ProcessAttribution]) {
+            guard !processes.isEmpty else { return }
+
+            var merged: [String: (cpu: Double, memory: UInt64)] = [:]
+            for process in processes {
+                var entry = merged[process.name] ?? (cpu: 0, memory: 0)
+                entry.cpu += process.cpu
+                let (memory, overflow) = entry.memory.addingReportingOverflow(process.memory)
+                entry.memory = overflow ? UInt64.max : memory
+                merged[process.name] = entry
+            }
+
+            for (name, value) in merged {
+                let peak = attributionPeaks[name] ?? (cpu: 0, memory: 0)
+                attributionPeaks[name] = (
+                    cpu: max(peak.cpu, value.cpu),
+                    memory: max(peak.memory, value.memory)
+                )
+            }
         }
 
         func sample() -> HistorySample {
@@ -68,8 +112,21 @@ public final class HistoryStore: @unchecked Sendable {
                 cpu: cpuSum / divisor,
                 memory: memorySum / divisor,
                 gpu: gpuCount > 0 ? gpuSum / Double(gpuCount) : nil,
-                diskUsed: diskUsedSum / divisor
+                diskUsed: diskUsedSum / divisor,
+                topProcesses: topProcesses()
             )
+        }
+
+        /// 按 cpu 降序、name 升序取前 3；没有进程时返回 nil（不伪造空数组）。
+        private func topProcesses() -> [ProcessAttribution]? {
+            guard !attributionPeaks.isEmpty else { return nil }
+            let sorted = attributionPeaks
+                .map { ProcessAttribution(name: $0.key, cpu: $0.value.cpu, memory: $0.value.memory) }
+                .sorted { lhs, rhs in
+                    if lhs.cpu != rhs.cpu { return lhs.cpu > rhs.cpu }
+                    return lhs.name < rhs.name
+                }
+            return Array(sorted.prefix(3))
         }
     }
 
@@ -104,8 +161,16 @@ public final class HistoryStore: @unchecked Sendable {
     // MARK: - 写入
 
     /// 记录一次采样。返回 true 表示刚刚落下了一个新的分钟点（界面需要刷新历史）。
+    /// `topProcesses` 有默认值，旧的 `record(cpu:memory:gpu:diskUsed:at:)` 调用仍可编译。
     @discardableResult
-    public func record(cpu: Double, memory: Double, gpu: Double?, diskUsed: Double, at date: Date = Date()) -> Bool {
+    public func record(
+        cpu: Double,
+        memory: Double,
+        gpu: Double?,
+        diskUsed: Double,
+        topProcesses: [ProcessAttribution] = [],
+        at date: Date = Date()
+    ) -> Bool {
         lock.lock()
         defer { lock.unlock() }
 
@@ -114,7 +179,13 @@ public final class HistoryStore: @unchecked Sendable {
 
         if var current = bucket {
             if current.start == minute {
-                current.add(cpu: cpu, memory: memory, gpu: gpu, diskUsed: diskUsed)
+                current.add(
+                    cpu: cpu,
+                    memory: memory,
+                    gpu: gpu,
+                    diskUsed: diskUsed,
+                    topProcesses: topProcesses
+                )
                 bucket = current
                 return false
             }
@@ -125,7 +196,13 @@ public final class HistoryStore: @unchecked Sendable {
         }
 
         var fresh = Bucket(start: minute)
-        fresh.add(cpu: cpu, memory: memory, gpu: gpu, diskUsed: diskUsed)
+        fresh.add(
+            cpu: cpu,
+            memory: memory,
+            gpu: gpu,
+            diskUsed: diskUsed,
+            topProcesses: topProcesses
+        )
         bucket = fresh
         return flushed
     }
@@ -179,7 +256,13 @@ public final class HistoryStore: @unchecked Sendable {
             let hour = configuration.calendar.dateInterval(of: .hour, for: sample.timestamp)?.start ?? sample.timestamp
             var bucket = groups[hour] ?? Bucket(start: hour)
             // 用分钟点重新求平均：每条分钟点权重相同，正好等于这一小时的平均占用。
-            bucket.add(cpu: sample.cpu, memory: sample.memory, gpu: sample.gpu, diskUsed: sample.diskUsed)
+            bucket.add(
+                cpu: sample.cpu,
+                memory: sample.memory,
+                gpu: sample.gpu,
+                diskUsed: sample.diskUsed,
+                topProcesses: sample.topProcesses ?? []
+            )
             groups[hour] = bucket
         }
         return groups.values.map { $0.sample() }.sorted { $0.timestamp < $1.timestamp }
