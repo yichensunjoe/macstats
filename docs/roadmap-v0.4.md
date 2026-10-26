@@ -258,7 +258,8 @@ D2 文档检查 ─┘
 - **0.3.1**：只修安装/文案/显示名，不动历史 schema；用于 C 的快速发布。
 - **0.4.0**：B1–B6 + D 的产物；如果 C 先用 0.3 发布，0.4 在反馈后发。
 - **0.4.1**：按 C 的反馈修，不夹带新功能。
-- 版本唯一来源：`VERSION`；Build 号从 `BUILD` 文件或 `git rev-list --count HEAD` 派生（D 轨道落地），不再硬编码 3。
+- 版本唯一来源：`VERSION`；Build 号唯一来源：`BUILD` 文件（D0 已落地，`MACSTATS_BUILD` 仅作本地覆盖）。
+  不用 `git rev-list --count HEAD`：CI shallow clone 会得到 1，会让构建号在 CI 与本机分叉。
 
 ---
 

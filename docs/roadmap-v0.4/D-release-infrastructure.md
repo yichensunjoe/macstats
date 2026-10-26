@@ -32,7 +32,7 @@
 |---|---|---|
 | CI | 无 | 仓库无 `.github/` |
 | 发布 | 手工命令串 | `HANDOFF.md` 的发布记录 |
-| 版本 | `VERSION` = 0.3；`BUILD` 默认 3 | `VERSION`、`scripts/bundle.sh` |
+| 版本 | `VERSION` = 0.3；`BUILD` 默认 3（D0 已改为 `BUILD` 文件，初始值 4） | `VERSION`、`BUILD`、`scripts/bundle.sh` |
 | 文档同步 | 手工 | 10 份 README |
 | 文档检查 | 手工链接/锚点全检 | 无脚本 |
 | Cask | `version :latest` / `sha256 :no_check` | `Casks/macstats.rb` |
