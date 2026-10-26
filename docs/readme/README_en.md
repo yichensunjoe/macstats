@@ -27,21 +27,60 @@ Formerly MacStats.
 
 [**Download MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (about 2.4 MB, macOS 15+ on Apple silicon)
 
+> **The download is called MacStats; the installed app shows up as MacS.** The release file is `MacStats.zip` and it unpacks to `MacStats.app`; Finder, Launchpad and the menu bar show MacS. Same app, and the bundle ID is still `com.macstats.app`, so preferences and widgets you already added are unaffected.
+
 1. Unzip it and drag `MacStats.app` into `/Applications`
-2. Right-click MacStats → Open once. The build is **signed but not notarized**; see [install notes](../install.md) for why, and for the terminal alternative
+2. Right-click MacS → **Open** and confirm once. The build is **signed but not notarized** (notarization needs a paid Developer ID certificate); see [install notes](../install.md) for why, and for the other ways to let it through
 3. The panel appears on the desktop. For the WidgetKit widget: right-click the desktop → Edit Widgets → search “系统监视” (the widget's name in the gallery)
 
-```bash
-# Optional: clear the download quarantine once, then double-click works
-xattr -dr com.apple.quarantine /Applications/MacStats.app
+The approval applies to that one download. After re-downloading, overwriting or upgrading you may be asked again — right-click → Open, same as before.
 
-# Or use Homebrew
+Step 1 is not optional: the WidgetKit extension is only discovered from `/Applications`. In the Downloads folder or `~/Applications`, MacS never shows up in the widget gallery.
+
+**Verify the download**
+
+Run this in the folder that holds both files (the `.sha256` is attached to the same release):
+
+```bash
+shasum -a 256 -c MacStats.zip.sha256
+```
+
+`MacStats.zip: OK` means the file is intact. If it fails, download again — do not install.
+
+**Other ways to install**
+
+```bash
+# 1. Clear the download quarantine once, then open normally
+xattr -dr com.apple.quarantine /Applications/MacStats.app
+open /Applications/MacStats.app
+
+# 2. Or use Homebrew
 brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
 brew trust yichensunjoe/macstats      # Homebrew 5+ requires trusting third-party taps
 brew install --cask macstats
 ```
 
-Verify the download with `shasum -a 256 -c MacStats.zip.sha256` (the checksum is attached to the release).
+Clearing the quarantine attribute is the usual path for an open-source app that is not notarized, not a way around the system's security model. The source, the build script and the signing step are all in the repo, so you can check them or [build from source](#build-from-source) yourself.
+
+**If it will not install**
+
+1. **Gatekeeper blocks it**: use one of the ways above (right-click → Open, or the quarantine command), or System Settings → Privacy & Security → Open Anyway. If macOS says the app is damaged, the download is usually incomplete — verify the sha256 and download again; if the checksum passes, try the quarantine command.
+2. **Wrong architecture**: the release is Apple silicon (arm64) only; it does not run on Intel Macs and there is no Rosetta build. `uname -m` should print `arm64`.
+3. **macOS too old**: macOS 15 (Sequoia) or newer is required. Check with `sw_vers -productVersion`.
+4. **Widget does not show up**: confirm the app is in `/Applications` (not Downloads, not `~/Applications`) and has been launched at least once, then `killall chronod NotificationCenter` and open the app again. Only one copy should be registered per Mac.
+5. **Homebrew says untrusted tap**: Homebrew 5+ requires an explicit `brew trust yichensunjoe/macstats` before `brew install --cask macstats`; `brew untrust yichensunjoe/macstats` revokes it. Homebrew does not clear the quarantine flag, so the first launch may still need the right-click approval.
+
+**Uninstall**
+
+```bash
+# Quit the app first (menu bar icon → Quit)
+rm -rf /Applications/MacStats.app
+
+# Installed with Homebrew:
+brew uninstall --cask macstats
+```
+
+Preferences and the widget snapshot stay in `~/Library/Application Support/MacStats/` and `~/Library/Preferences/com.macstats.app.plist`; delete those too for a full cleanup. Remove desktop widgets from Edit Widgets; uninstalling the app clears the extension registration.
 
 <p align="center">
   <img src="../live-window.png" alt="MacStats desktop panel: CPU, memory, GPU, energy, disk, network and the top three processes by memory" width="460" />

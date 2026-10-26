@@ -27,21 +27,46 @@
 
 [**下载 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（约 2.4 MB，macOS 15+ / Apple 芯片）
 
+> **下载的包叫 MacStats，装好后显示名是 MacS。** Release 里的文件是 `MacStats.zip`，解压出来是 `MacStats.app`；Finder、启动台、菜单栏显示的是 MacS。同一个 App，Bundle ID 仍是 `com.macstats.app`，偏好与已添加的小组件都不受影响。
+
 1. 解压，把 `MacStats.app` 拖进 `/Applications`
-2. 右键 MacStats →「打开」，确认一次（**未公证**，原因与另一种放行方式见[安装说明](docs/install.md)）
+2. 右键 MacS →「打开」，确认一次（**未公证**，原因与其它放行方式见[安装说明](docs/install.md)）
 3. 面板出现在桌面；想要系统小组件，右键桌面 →「编辑小组件」→ 搜「系统监视」
 
-```bash
-# 可选：清掉下载隔离属性，之后双击即可
-xattr -dr com.apple.quarantine /Applications/MacStats.app
+放行只对这一次下载生效：重新下载、覆盖安装或升级后可能再被拦一次，照旧右键 →「打开」。
 
-# 或者用 Homebrew
+第 1 步不能省：系统小组件只从 `/Applications` 发现扩展宿主，放在下载目录或 `~/Applications` 里，小组件库中不会出现 MacS。
+
+**校验下载**（在下载目录里，两个文件同级）：
+
+```bash
+shasum -a 256 -c MacStats.zip.sha256
+```
+
+输出 `MacStats.zip: OK` 表示文件完整；失败就重新下载，不要继续安装。
+
+**另外两种可选方式**（终端清隔离属性 / Homebrew）：
+
+```bash
+# 1. 清掉下载隔离属性，之后正常打开
+xattr -dr com.apple.quarantine /Applications/MacStats.app
+open /Applications/MacStats.app
+
+# 2. 或者用 Homebrew
 brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
 brew trust yichensunjoe/macstats      # Homebrew 5+ 需要显式信任第三方 tap
 brew install --cask macstats
 ```
 
-下载校验：`shasum -a 256 -c MacStats.zip.sha256`（校验文件在 Release 里）。
+**装不上时先看这里**：
+
+1. **Gatekeeper 拦截**：用上面的方式放行（右键 →「打开」，或清隔离属性）；也可以在系统设置 → 隐私与安全性里点「仍要打开」。提示「App 已损坏，无法打开」多半是下载不完整——先跑 sha256 校验，失败就重新下载；校验通过仍报损坏，用清隔离属性的方式再打开。
+2. **架构不对**：只提供 Apple 芯片（arm64）包，Intel Mac 无法运行，也没有 Rosetta 版本。`uname -m` 应输出 `arm64`。
+3. **系统版本太低**：需要 macOS 15（Sequoia）或更新，`sw_vers -productVersion` 确认。
+4. **系统小组件不出现**：确认 App 在 `/Applications`（不是下载目录或 `~/Applications`）、至少启动过一次，然后 `killall chronod NotificationCenter`，再打开一次 App；一台机器只应注册一份。
+5. **Homebrew 报 untrusted tap**：Homebrew 5 起第三方 tap 必须先 `brew trust yichensunjoe/macstats` 再 `brew install --cask macstats`；`brew untrust yichensunjoe/macstats` 可撤回。Homebrew 不会替你清隔离属性，首次启动仍可能需要右键放行。
+
+**卸载**：先退出 App（菜单栏图标 → 退出），再 `rm -rf /Applications/MacStats.app`；Homebrew 装的用 `brew uninstall --cask macstats`。偏好与快照留在 `~/Library/Application Support/MacStats/` 和 `~/Library/Preferences/com.macstats.app.plist`，需要彻底清掉时一并删除。
 
 <p align="center">
   <img src="docs/live-window.png" alt="MacStats 桌面面板：CPU、内存、GPU、能耗、磁盘、网络与内存占用最高的进程" width="460" />

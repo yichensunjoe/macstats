@@ -5,6 +5,7 @@ dist/
 .DS_Store
 *.xcodeproj
 xcuserdata/
+__pycache__/
 
 # Local working notes — personal workflow, never published
 /AGENTS.md
