@@ -14,6 +14,8 @@ struct WidgetData {
     var networkOut = MetricRing(capacity: 90)
     var refreshInterval: TimeInterval = 1
     var topProcessesCount: Int = 5
+    /// 分钟级历史（最多 24 小时），跨分钟时由 AppDelegate 更新。
+    var history: [HistorySample] = []
 }
 
 /// 驱动小组件响应式刷新的 Observable 模型。
@@ -219,6 +221,10 @@ struct WidgetView: View {
         VStack(spacing: 8) {
             header
             tileGrid(layout)
+            if layout != .compact {
+                // 固定高度：Tile 内部是 maxHeight: .infinity，不钉住就会把下方的卡片挤扁。
+                historyCard.frame(height: 84)
+            }
             if layout.showsFooter {
                 footer
             }
@@ -261,6 +267,62 @@ struct WidgetView: View {
         case .gpu: gpuTile(layout)
         case .processes: processTile(layout)
         }
+    }
+
+    // MARK: - 24 小时历史
+
+    private var historyCard: some View {
+        Tile(
+            title: L10n.t(.history24hTitle),
+            systemImage: "clock.arrow.circlepath",
+            tint: Theme.network,
+            minHeight: 62
+        ) {
+            if data.history.count >= 2 {
+                HStack(spacing: 10) {
+                    historySeries(
+                        title: L10n.t(.cpu),
+                        values: data.history.map(\.cpu),
+                        color: Theme.cpu
+                    )
+                    historySeries(
+                        title: L10n.t(.memory),
+                        values: data.history.map(\.memory),
+                        color: Theme.memory
+                    )
+                    historySeries(
+                        title: L10n.t(.gpu),
+                        values: data.history.compactMap(\.gpu),
+                        color: Theme.gpu
+                    )
+                }
+            } else {
+                Text(L10n.t(.historyInsufficient))
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(Theme.tertiaryText)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func historySeries(title: String, values: [Double], color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
+                Circle().fill(color).frame(width: 4.5, height: 4.5)
+                Text(title)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(Theme.secondaryText)
+                Spacer(minLength: 2)
+                Text(values.isEmpty ? "—" : L10n.format(.historyPeakToday, PercentFormat.percent(values.max() ?? 0)))
+                    .font(.system(size: 8.5, weight: .medium).monospacedDigit())
+                    .foregroundStyle(Theme.tertiaryText)
+                    .lineLimit(1)
+            }
+            Sparkline(points: values, color: color)
+                .frame(height: 22)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var header: some View {

@@ -10,7 +10,7 @@
 
 [![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#下载安装)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#实现方式)
-[![tests](https://img.shields.io/badge/tests-91%20passing-3fb950?style=flat-square)](#命令)
+[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#命令)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#实现方式)
 
 [下载安装](#下载安装) · [能看什么](#能看什么) · [两种形态](#两种形态) · [口径对齐](#和活动监视器对到什么程度) · [常见问题](#常见问题) · [限制](#已知限制)
@@ -98,6 +98,16 @@ bash scripts/bundle.sh --archive
   <img src="docs/widget-medium.png" alt="WidgetKit 中尺寸：CPU 主板与内存、磁盘、网络、能耗，有 GPU 时再加一格 GPU" width="620" />
   <img src="docs/widget-small.png" alt="WidgetKit 小尺寸：CPU 大数字与趋势线" width="280" />
 </p>
+
+## 24 小时历史与持续高负载提醒
+
+标准与详细面板多一条「过去 24 小时」：CPU、内存、GPU 三根曲线，各带 24 小时峰值。
+采样仍是每秒一次，落盘按分钟取平均、按天写成 JSONL，放在
+`~/Library/Application Support/MacStats/history/`——一天约 190 KB，默认保留 30 天。
+设置 → 监控里可以改成 7 / 30 / 90 天，或一键清空。
+
+「持续高负载提醒」默认关闭。打开后，CPU ≥ 90%、内存 ≥ 85%、磁盘 ≥ 90%
+**连续 3 次采样**才发通知，同一指标 10 分钟内不重复——单次尖峰不会打扰你。
 
 ## 一键清理后台闲置进程
 

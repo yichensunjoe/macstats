@@ -135,6 +135,25 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case processesCount8
     case processesHint
 
+    // History & Alerts
+    case historySection
+    case historyRecording
+    case historyRecordingDesc
+    case historyRetention
+    case retentionDaysFormat
+    case clearHistory
+    case clearHistoryConfirm
+    case historyUsage
+    case history24hTitle
+    case historyPeakToday
+    case historyInsufficient
+    case thresholdAlerts
+    case thresholdAlertsDesc
+    case alertCPU
+    case alertMemory
+    case alertDisk
+    case alertBody
+
     // Cleanup Tab
     case cleanupRulesSection
     case idleThreshold
@@ -422,6 +441,24 @@ public final class L10n: @unchecked Sendable {
         .processesCount8: "8 个进程",
         .processesHint: "在标准与详细面板中按内存降序排列占用最高的进程。",
 
+        .historySection: "历史与告警",
+        .historyRecording: "记录历史",
+        .historyRecordingDesc: "每分钟落一个平均点，按天保存在本机；更早的小时数据按设置的时长自动清理。",
+        .historyRetention: "保留时长",
+        .retentionDaysFormat: "%d 天",
+        .clearHistory: "清空历史",
+        .clearHistoryConfirm: "清空后无法恢复，确定删除本机所有历史记录？",
+        .historyUsage: "本机已占用 %@",
+        .history24hTitle: "过去 24 小时",
+        .historyPeakToday: "峰值 %@",
+        .historyInsufficient: "刚开始记录，曲线会随使用逐渐补全",
+        .thresholdAlerts: "持续高负载提醒",
+        .thresholdAlertsDesc: "CPU ≥ 90%%、内存 ≥ 85%% 或磁盘 ≥ 90%% 连续 3 次采样时通知；同一指标 10 分钟内不重复。",
+        .alertCPU: "CPU 持续高负载",
+        .alertMemory: "内存持续偏高",
+        .alertDisk: "磁盘空间不足",
+        .alertBody: "%@ %%，已连续超过阈值",
+
         .cleanupRulesSection: "清理判定策略",
         .idleThreshold: "闲置时间下限",
         .idle5m: "5 分钟",
@@ -639,6 +676,24 @@ public final class L10n: @unchecked Sendable {
         .processesCount5: "5 processes",
         .processesCount8: "8 processes",
         .processesHint: "Processes with highest memory consumption shown in standard/expanded panels.",
+
+        .historySection: "History & Alerts",
+        .historyRecording: "Record History",
+        .historyRecordingDesc: "One averaged point per minute, stored per day on this Mac; older hourly data is pruned after the retention you pick.",
+        .historyRetention: "Keep History For",
+        .retentionDaysFormat: "%d days",
+        .clearHistory: "Clear History",
+        .clearHistoryConfirm: "This cannot be undone. Delete all history stored on this Mac?",
+        .historyUsage: "%@ on disk",
+        .history24hTitle: "Last 24 Hours",
+        .historyPeakToday: "Peak %@",
+        .historyInsufficient: "Just started recording — the curve fills in as you use your Mac",
+        .thresholdAlerts: "Sustained Load Alerts",
+        .thresholdAlertsDesc: "Notify when CPU ≥ 90%%, memory ≥ 85%%, or disk ≥ 90%% for 3 consecutive samples; each metric repeats at most every 10 minutes.",
+        .alertCPU: "Sustained High CPU",
+        .alertMemory: "Sustained High Memory",
+        .alertDisk: "Low Disk Space",
+        .alertBody: "%@ %%, above the threshold",
 
         .cleanupRulesSection: "Cleanup Thresholds",
         .idleThreshold: "Minimum Idle Time",

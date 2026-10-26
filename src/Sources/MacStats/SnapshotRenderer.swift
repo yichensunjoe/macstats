@@ -46,6 +46,13 @@ enum SnapshotRenderer {
             ))
         }
 
+        // 文档截图要展示真实的 24 小时曲线：用 MACSTATS_HISTORY_DIR 指向一份历史目录即可，
+        // 不传就保持空历史（面板显示“刚开始记录”）。
+        if let directory = ProcessInfo.processInfo.environment["MACSTATS_HISTORY_DIR"] {
+            let store = HistoryStore(configuration: .init(directory: URL(fileURLWithPath: directory)))
+            data.history = store.recent24h()
+        }
+
         // 视图按实际尺寸选版式，离屏渲染必须给一个明确尺寸。
         // 显式传入尺寸时可渲染非预设宽度（例如检查极简条最窄时六格是否排得下）。
         let size = size ?? layout.presetSize

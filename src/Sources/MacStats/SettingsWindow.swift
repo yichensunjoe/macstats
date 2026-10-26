@@ -54,6 +54,12 @@ final class SettingsModel {
     var notifyOnCleanup = true
     var memoryAlert = false
 
+    // 历史与阈值
+    var historyEnabled = true
+    var historyRetentionDays = 30
+    var thresholdAlerts = false
+    var historyUsage: Int64 = 0
+
     // 清理策略与白名单
     var cleanupMinimumIdle: TimeInterval = 600
     var cleanupMinMemoryMB: Int = 20
@@ -103,6 +109,11 @@ final class SettingsModel {
         soundEffects = app.soundEffectsEnabled
         notifyOnCleanup = app.notifyOnCleanupEnabled
         memoryAlert = app.memoryAlertEnabled
+
+        historyEnabled = app.historyEnabled
+        historyRetentionDays = app.historyRetentionDays
+        thresholdAlerts = app.thresholdAlertsEnabled
+        historyUsage = app.historyUsageBytes()
 
         cleanupMinimumIdle = app.cleanupMinimumIdle
         cleanupMinMemoryMB = app.cleanupMinMemoryMB
@@ -211,6 +222,30 @@ final class SettingsModel {
         app?.setMemoryAlert(on)
     }
 
+    // MARK: - 历史与阈值
+
+    func setHistoryEnabled(_ on: Bool) {
+        historyEnabled = on
+        app?.setHistoryEnabled(on)
+        historyUsage = app?.historyUsageBytes() ?? 0
+    }
+
+    func setHistoryRetentionDays(_ days: Int) {
+        historyRetentionDays = days
+        app?.setHistoryRetentionDays(days)
+        historyUsage = app?.historyUsageBytes() ?? 0
+    }
+
+    func setThresholdAlerts(_ on: Bool) {
+        thresholdAlerts = on
+        app?.setThresholdAlerts(on)
+    }
+
+    func clearHistory() {
+        app?.clearHistory()
+        historyUsage = 0
+    }
+
     // MARK: - 清理策略与白名单
 
     func setCleanupMinimumIdle(_ seconds: TimeInterval) {
@@ -299,6 +334,7 @@ struct SettingsView: View {
 
     @State private var showResetConfirm = false
     @State private var showClearWhitelistConfirm = false
+    @State private var showClearHistoryConfirm = false
 
     private let intervals: [Double] = [0.5, 1, 2, 5]
     private let smoothingWindows: [Int] = [1, 3, 5]
@@ -519,8 +555,54 @@ struct SettingsView: View {
             } footer: {
                 Text(L10n.t(.processesHint))
             }
+
+            Section {
+                Toggle(L10n.t(.historyRecording), isOn: Binding(
+                    get: { model.historyEnabled },
+                    set: { model.setHistoryEnabled($0) }
+                ))
+
+                Picker(L10n.t(.historyRetention), selection: Binding(
+                    get: { model.historyRetentionDays },
+                    set: { model.setHistoryRetentionDays($0) }
+                )) {
+                    ForEach([7, 30, 90], id: \.self) { days in
+                        Text(L10n.format(.retentionDaysFormat, "\(days)")).tag(days)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .disabled(!model.historyEnabled)
+
+                HStack(spacing: 8) {
+                    Text(L10n.format(.historyUsage, ByteFormat.decimalBytes(UInt64(max(0, model.historyUsage)))))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button(role: .destructive) {
+                        showClearHistoryConfirm = true
+                    } label: {
+                        Text(L10n.t(.clearHistory))
+                    }
+                    .disabled(model.historyUsage == 0)
+                }
+
+                Toggle(L10n.t(.thresholdAlerts), isOn: Binding(
+                    get: { model.thresholdAlerts },
+                    set: { model.setThresholdAlerts($0) }
+                ))
+            } header: {
+                sectionHeader(title: L10n.t(.historySection), systemImage: "clock.arrow.circlepath", color: .teal)
+            } footer: {
+                Text(L10n.t(.historyRecordingDesc) + " " + L10n.t(.thresholdAlertsDesc))
+            }
         }
         .formStyle(.grouped)
+        .alert(L10n.t(.clearHistory), isPresented: $showClearHistoryConfirm) {
+            Button(L10n.t(.clearHistory), role: .destructive) { model.clearHistory() }
+            Button(L10n.t(.cancel), role: .cancel) {}
+        } message: {
+            Text(L10n.t(.clearHistoryConfirm))
+        }
     }
 
     // MARK: - Tab 4: 后台清理 (Cleanup)

@@ -26,7 +26,7 @@ WIDGET_ID="com.macstats.app.widget"
 # chronod 可能把扩展当成旧版本缓存起来。
 VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION" 2>/dev/null || true)"
 VERSION="${MACSTATS_VERSION:-${VERSION:-0.1}}"
-BUILD="${MACSTATS_BUILD:-2}"
+BUILD="${MACSTATS_BUILD:-3}"
 DIST="${MACSTATS_DIST:-$ROOT/dist}"
 
 ARCHIVE=0

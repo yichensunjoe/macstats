@@ -28,6 +28,8 @@ struct Tile<Content: View>: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
         .frame(maxWidth: .infinity, minHeight: minHeight, maxHeight: .infinity, alignment: .topLeading)
+        // 面板可以被拖到很小；内容超出时裁掉，而不是压到下一张卡片上。
+        .clipped()
         .background(
             RoundedRectangle(cornerRadius: 13, style: .continuous)
                 .fill(Theme.tileFill)

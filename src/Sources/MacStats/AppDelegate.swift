@@ -43,6 +43,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         static let cleanupMinMemoryMB = "cleanupMinMemoryMB"
         static let topProcessesCount = "topProcessesCount"
         static let showMenuBarStats = "showMenuBarStats"
+        static let historyEnabled = "historyEnabled"
+        static let historyRetentionDays = "historyRetentionDays"
+        static let thresholdAlerts = "thresholdAlerts"
     }
 
     private let defaults = UserDefaults.standard
@@ -74,6 +77,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private static let widgetHeartbeatInterval: TimeInterval = 60
     private var lastMemoryAlert = Date.distantPast
 
+    // 历史：每秒采样在内存里按分钟聚合，跨分钟才写一行 JSONL。
+    private var historyStore: HistoryStore?
+    private let thresholdEvaluator = ThresholdAlertEvaluator()
+
     private var interval: TimeInterval = 1
     private var isFloating = false
     private var isClickThrough = false
@@ -90,6 +97,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var cleanupMinMemoryMB: Int = 20
     var topProcessesCount: Int = 5
     var showMenuBarStats = true
+    var historyEnabled = true
+    var historyRetentionDays = 30
+    var thresholdAlertsEnabled = false
 
     private var visibleItem: NSMenuItem?
     private var removeAllItem: NSMenuItem?
@@ -118,6 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     func applicationWillTerminate(_ notification: Notification) {
+        historyStore?.flush()
         persist()
         warmUpTask?.cancel()
         tickTask?.cancel()
@@ -240,6 +251,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if defaults.object(forKey: Key.showMenuBarStats) != nil {
             showMenuBarStats = defaults.bool(forKey: Key.showMenuBarStats)
         }
+        if defaults.object(forKey: Key.historyEnabled) != nil {
+            historyEnabled = defaults.bool(forKey: Key.historyEnabled)
+        }
+        if defaults.object(forKey: Key.historyRetentionDays) != nil {
+            historyRetentionDays = max(1, defaults.integer(forKey: Key.historyRetentionDays))
+        }
+        if defaults.object(forKey: Key.thresholdAlerts) != nil {
+            thresholdAlertsEnabled = defaults.bool(forKey: Key.thresholdAlerts)
+        }
+        setupHistoryStore()
 
         viewModel.data.refreshInterval = interval
     }
@@ -896,6 +917,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    // MARK: - 历史与阈值告警
+
+    func setHistoryEnabled(_ on: Bool) {
+        historyEnabled = on
+        defaults.set(on, forKey: Key.historyEnabled)
+        if on {
+            setupHistoryStore()
+        } else {
+            historyStore?.flush()
+            historyStore = nil
+            viewModel.data.history = []
+        }
+    }
+
+    func setHistoryRetentionDays(_ days: Int) {
+        historyRetentionDays = max(1, days)
+        defaults.set(historyRetentionDays, forKey: Key.historyRetentionDays)
+        historyStore?.setRetentionDays(historyRetentionDays)
+    }
+
+    func setThresholdAlerts(_ on: Bool) {
+        thresholdAlertsEnabled = on
+        defaults.set(on, forKey: Key.thresholdAlerts)
+        thresholdEvaluator.reset()
+        if on {
+            requestNotificationPermission()
+        }
+    }
+
+    func clearHistory() {
+        historyStore?.clear()
+        viewModel.data.history = []
+    }
+
+    func historyUsageBytes() -> Int64 {
+        historyStore?.diskUsageBytes() ?? 0
+    }
+
     // MARK: - 清理策略
 
     func setCleanupMinimumIdle(_ seconds: TimeInterval) {
@@ -924,6 +983,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         setNotifyOnCleanup(true)
         setMemoryAlert(false)
         setShowMenuBarStats(true)
+        setHistoryEnabled(true)
+        setHistoryRetentionDays(30)
+        setThresholdAlerts(false)
         setCleanupMinimumIdle(600)
         setCleanupMinMemoryMB(20)
         clearCleanupWhitelist()
@@ -949,7 +1011,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             Key.accentTint, Key.smoothingWindow, Key.startHidden,
             Key.notifyOnCleanup, Key.soundEffects, Key.memoryAlert,
             Key.cleanupMinimumIdle, Key.cleanupMinMemoryMB, Key.topProcessesCount,
-            Key.showMenuBarStats
+            Key.showMenuBarStats, Key.historyEnabled, Key.historyRetentionDays, Key.thresholdAlerts
         ]
         for key in keys {
             defaults.removeObject(forKey: key)
@@ -1311,8 +1373,66 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         viewModel.data = currentData
 
         checkMemoryAlert(snapshot)
+        recordHistory(snapshot)
+        checkThresholdAlerts(snapshot)
         updateStatusTitle(currentData.snapshot)
         publishWidgetFeed(currentData.snapshot)
+    }
+
+    // MARK: - 历史与阈值
+
+    private func setupHistoryStore() {
+        guard historyEnabled else {
+            historyStore = nil
+            viewModel.data.history = []
+            return
+        }
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("MacStats/history", isDirectory: true)
+        let store = HistoryStore(configuration: .init(directory: base, retentionDays: historyRetentionDays))
+        historyStore = store
+        viewModel.data.history = store.recent24h()
+    }
+
+    private func recordHistory(_ snapshot: MetricSnapshot) {
+        guard historyEnabled, let store = historyStore else { return }
+        let memoryFraction = snapshot.memory.total > 0
+            ? Double(snapshot.memory.used) / Double(snapshot.memory.total)
+            : 0
+        let flushed = store.record(
+            cpu: snapshot.cpu.total,
+            memory: memoryFraction,
+            gpu: snapshot.gpu?.utilization,
+            diskUsed: snapshot.disk.usedFraction,
+            at: snapshot.timestamp
+        )
+        if flushed {
+            viewModel.data.history = store.recent24h(now: snapshot.timestamp)
+        }
+    }
+
+    private func checkThresholdAlerts(_ snapshot: MetricSnapshot) {
+        guard thresholdAlertsEnabled else { return }
+        let memoryFraction = snapshot.memory.total > 0
+            ? Double(snapshot.memory.used) / Double(snapshot.memory.total)
+            : 0
+        guard let event = thresholdEvaluator.evaluate(
+            cpu: snapshot.cpu.total,
+            memory: memoryFraction,
+            diskUsed: snapshot.disk.usedFraction,
+            at: snapshot.timestamp
+        ) else { return }
+
+        let title: String
+        switch event.kind {
+        case .cpu: title = L10n.t(.alertCPU)
+        case .memory: title = L10n.t(.alertMemory)
+        case .disk: title = L10n.t(.alertDisk)
+        }
+        sendNotification(
+            title: title,
+            body: L10n.format(.alertBody, PercentFormat.percent(event.value))
+        )
     }
 
     /// 把当前采样递到 `~/Library/Application Support/MacStats/widget-feed.json`，

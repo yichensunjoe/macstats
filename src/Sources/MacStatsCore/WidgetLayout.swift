@@ -85,8 +85,8 @@ public enum WidgetLayout: String, Codable, Sendable, CaseIterable {
         case .micro: CGSize(width: 452, height: 80)
         case .compact: CGSize(width: 340, height: 190)
         // 多了 GPU 一块，标准/详细各加一行的高度。
-        case .standard: CGSize(width: 372, height: 530)
-        case .expanded: CGSize(width: 600, height: 430)
+        case .standard: CGSize(width: 372, height: 640)
+        case .expanded: CGSize(width: 600, height: 660)
         }
     }
 

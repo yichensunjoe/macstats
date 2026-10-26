@@ -10,7 +10,7 @@
 
 [![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#install)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#how-it-works)
-[![tests](https://img.shields.io/badge/tests-91%20passing-3fb950?style=flat-square)](#commands)
+[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#commands)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#how-it-works)
 
 [Install](#install) · [What it shows](#what-it-shows) · [Two surfaces](#two-surfaces) · [Accuracy](#how-close-it-gets-to-activity-monitor) · [FAQ](#faq) · [Limitations](#known-limitations)
@@ -97,6 +97,16 @@ On first launch a small `CPU · Memory` readout appears in the menu bar and the 
   <img src="../widget-medium.png" alt="Medium widget: CPU with per-core bars, plus memory, disk, network and energy tiles, with a GPU tile when available" width="620" />
   <img src="../widget-small.png" alt="Small widget: large CPU number with a trend line" width="280" />
 </p>
+
+## 24-hour history and sustained-load alerts
+
+Standard and expanded panels carry a “Last 24 Hours” row: CPU, memory and GPU curves, each with its
+24-hour peak. Sampling stays at once per second; points are averaged per minute and written as JSONL
+under `~/Library/Application Support/MacStats/history/` — about 190 KB a day, kept for 30 days by default. Settings → Monitoring switches that to 7 / 30 / 90 days, or clears it.
+
+“Sustained load alerts” is off by default. When on, CPU ≥ 90%, memory ≥ 85% or disk ≥ 90% must hold
+for **three consecutive samples** before a notification fires, and each metric repeats at most every
+ten minutes — a single spike never interrupts you.
 
 ## One-click cleanup of idle background processes
 
