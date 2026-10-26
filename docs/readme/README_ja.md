@@ -10,7 +10,7 @@
 
 [![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#インストール)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#仕組み)
-[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#コマンド)
+[![tests](https://img.shields.io/badge/tests-175%20passing-3fb950?style=flat-square)](#コマンド)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#仕組み)
 
 [インストール](#インストール) · [表示できる指標](#表示できる指標) · [2つの表示形態](#2つの表示形態) · [精度](#アクティビティモニタとの一致度) · [FAQ](#faq) · [既知の制限](#既知の制限)
@@ -167,7 +167,7 @@ src/Sources/MacStatsCore/    サンプリング、メモリ換算、リング履
 src/Sources/MacStats/        SwiftUI パネル、メニューバーアプリ、コンテキストメニュー、オフスクリーン描画
 src/Sources/MacStatsWidget/  WidgetKit 拡張：タイムラインプロバイダ + 4段階のビュー
 src/Sources/MacStatsDiag/    診断 CLI（--json / --raw / --self-check）
-src/Tests/                   XCTest、103件
+src/Tests/                   XCTest、175件
 scripts/bundle.sh            release ビルド、appex 組み立て、署名、インストール、登録
 docs/                        精度の検証記録、アーキテクチャ、要件、スクリーンショット
 ```

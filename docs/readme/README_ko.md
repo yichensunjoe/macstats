@@ -10,7 +10,7 @@
 
 [![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#설치)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#동작-방식)
-[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#명령)
+[![tests](https://img.shields.io/badge/tests-175%20passing-3fb950?style=flat-square)](#명령)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#동작-방식)
 
 [설치](#설치) · [표시 항목](#표시-항목) · [두 가지 형태](#두-가지-형태) · [정확도](#활동-모니터와-얼마나-일치하는가) · [FAQ](#faq) · [알려진-제한](#알려진-제한)
@@ -167,7 +167,7 @@ src/Sources/MacStatsCore/    샘플링, 메모리 환산, 링 이력, 포매팅(
 src/Sources/MacStats/        SwiftUI 패널, 메뉴 막대 앱, 컨텍스트 메뉴, 오프스크린 렌더
 src/Sources/MacStatsWidget/  WidgetKit 확장: 타임라인 프로바이더 + 네 단계 뷰
 src/Sources/MacStatsDiag/    진단 CLI(--json / --raw / --self-check)
-src/Tests/                   XCTest, 103개
+src/Tests/                   XCTest, 175개
 scripts/bundle.sh            release 빌드, appex 조립, 서명, 설치, 등록
 docs/                        정확도 검증, 아키텍처, 요구 사항, 스크린숏
 ```

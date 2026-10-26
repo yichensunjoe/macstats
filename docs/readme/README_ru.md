@@ -10,7 +10,7 @@
 
 [![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#установка)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#как-это-работает)
-[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#команды)
+[![tests](https://img.shields.io/badge/tests-175%20passing-3fb950?style=flat-square)](#команды)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#как-это-работает)
 
 [Установка](#установка) · [Что показывается](#что-показывается) · [Две поверхности](#две-поверхности) · [Точность](#насколько-точно-совпадает-с-мониторингом-системы) · [FAQ](#faq) · [Ограничения](#известные-ограничения)
@@ -167,7 +167,7 @@ src/Sources/MacStatsCore/    снятие показаний, расчёт па�
 src/Sources/MacStats/        панель SwiftUI, приложение в строке меню, контекстное меню, отрисовка вне экрана
 src/Sources/MacStatsWidget/  расширение WidgetKit: провайдер таймлайна + четыре представления
 src/Sources/MacStatsDiag/    диагностический CLI (--json / --raw / --self-check)
-src/Tests/                   XCTest, 103 случая
+src/Tests/                   XCTest, 175 случая
 scripts/bundle.sh            release-сборка, сборка appex, подпись, установка, регистрация
 docs/                        заметки о сверке, архитектура, требования, скриншоты
 ```

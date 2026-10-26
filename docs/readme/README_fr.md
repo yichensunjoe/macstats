@@ -10,7 +10,7 @@
 
 [![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#installation)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#fonctionnement)
-[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#commandes)
+[![tests](https://img.shields.io/badge/tests-175%20passing-3fb950?style=flat-square)](#commandes)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#fonctionnement)
 
 [Installation](#installation) · [Ce qui est affiché](#ce-qui-est-affiché) · [Deux surfaces](#deux-surfaces) · [Précision](#quel-point-de-précision-face-au-moniteur-dactivité) · [FAQ](#faq) · [Limites](#limites-connues)
@@ -167,7 +167,7 @@ src/Sources/MacStatsCore/    échantillonnage, calcul mémoire, historique circu
 src/Sources/MacStats/        panneau SwiftUI, app de barre des menus, menu contextuel, rendu hors écran
 src/Sources/MacStatsWidget/  extension WidgetKit : fournisseur de timelines + quatre vues
 src/Sources/MacStatsDiag/    CLI de diagnostic (--json / --raw / --self-check)
-src/Tests/                   XCTest, 103 cas
+src/Tests/                   XCTest, 175 cas
 scripts/bundle.sh            build release, assemblage de l'appex, signature, installation, enregistrement
 docs/                        notes de comparaison, architecture, exigences, captures
 ```
