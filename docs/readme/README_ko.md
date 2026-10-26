@@ -2,7 +2,7 @@
 
 [简体中文](../../README.md) · [English](README_en.md) · [繁體中文](README_zh-TW.md) · [日本語](README_ja.md) · **한국어** · [Deutsch](README_de.md) · [Español](README_es.md) · [Français](README_fr.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
 
-# MacStats
+# MacS
 
 ### 활동 모니터를 바탕화면에 고정해 두세요.
 

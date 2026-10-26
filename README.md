@@ -2,7 +2,9 @@
 
 **简体中文** · [English](docs/readme/README_en.md) · [繁體中文](docs/readme/README_zh-TW.md) · [日本語](docs/readme/README_ja.md) · [한국어](docs/readme/README_ko.md) · [Deutsch](docs/readme/README_de.md) · [Español](docs/readme/README_es.md) · [Français](docs/readme/README_fr.md) · [Русский](docs/readme/README_ru.md) · [Português (Brasil)](docs/readme/README_pt-BR.md)
 
-# MacStats
+# MacS
+
+原名 MacStats。
 
 ### 把「活动监视器」钉在桌面上的一块实时仪表。
 

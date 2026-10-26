@@ -1,4 +1,4 @@
-# 安装 MacStats
+# 安装 MacS
 
 ## 需要什么
 
@@ -10,16 +10,16 @@
 1. **下载** [MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)
    （校验文件：同目录下的 `MacStats.zip.sha256`）
 2. 解压，把 `MacStats.app` **拖进 `/Applications`**
-3. 在应用程序里 **右键 MacStats → 打开**，确认一次「打开」
+3. 在应用程序里 **右键 MacS → 打开**，确认一次「打开」
 
 面板会出现在桌面上，菜单栏同时出现 `CPU · 内存` 读数。之后从启动台双击即可，不再需要右键。
 
 > 第 2 步不能省：系统小组件（WidgetKit）只从 `/Applications` 发现扩展宿主，
-> 放在下载目录或 `~/Applications` 里，小组件库中不会出现 MacStats。
+> 放在下载目录或 `~/Applications` 里，小组件库中不会出现 MacS。
 
 ## 为什么第一次要右键打开
 
-MacStats 目前用 **Apple Development** 证书签名，**没有做 Apple 公证**（公证需要付费的
+MacS 目前用 **Apple Development** 证书签名，**没有做 Apple 公证**（公证需要付费的
 Developer ID 证书）。从网络下载的包会被 Gatekeeper 拦下，提示「无法验证开发者」。
 
 右键 → 打开 是系统给的单次放行方式。也可以在终端里一次性清掉隔离属性：
@@ -51,7 +51,7 @@ shasum -a 256 -c MacStats.zip.sha256
 小组件读主程序写出的快照（数值变化时最快 30 秒一次，空闲 60 秒心跳），
 所以它不是每秒跳动的那种；要秒级刷新请用桌面面板本身。
 
-如果小组件库搜不到 MacStats：确认 App 在 `/Applications`、已启动过一次，
+如果小组件库搜不到 MacS：确认 App 在 `/Applications`、已启动过一次，
 然后 `killall chronod NotificationCenter` 再打开一次 App。
 
 ## 卸载
