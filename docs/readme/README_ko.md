@@ -8,18 +8,38 @@
 
 **CPU, 메모리, GPU, 에너지, 디스크, 네트워크를 한눈에. 모든 수치는 활동 모니터와 맞춰져 있습니다.**
 
-[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#빠른-시작)
+[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#설치)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#동작-방식)
-[![tests](https://img.shields.io/badge/tests-91%20passing-3fb950?style=flat-square)](#명령)
+[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#명령)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#동작-방식)
 
-[빠른 시작](#빠른-시작) · [표시 항목](#표시-항목) · [두 가지 형태](#두-가지-형태) · [정확도](#활동-모니터와-얼마나-일치하는가) · [FAQ](#faq) · [알려진-제한](#알려진-제한)
+[설치](#설치) · [표시 항목](#표시-항목) · [두 가지 형태](#두-가지-형태) · [정확도](#활동-모니터와-얼마나-일치하는가) · [FAQ](#faq) · [알려진-제한](#알려진-제한)
 
-`bash scripts/bundle.sh`
+**[MacStats.zip 다운로드](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · `/Applications`로 드래그한 뒤 처음 한 번만 오른쪽 클릭 → '열기'
 
 </div>
 
 ---
+
+## 설치
+
+[**MacStats.zip 다운로드**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (약 2.4 MB, macOS 15+ / Apple 실리콘)
+
+1. 압축을 풀고 `MacStats.app`을 `/Applications`로 드래그
+2. MacStats를 오른쪽 클릭 → '열기'로 한 번 확인 (**공증되지 않음**; 이유와 터미널 대안은 [설치 안내](../install.md) 참고)
+3. 데스크톱에 패널이 나타납니다. 시스템 위젯은 데스크톱을 오른쪽 클릭 → '위젯 편집' → '系统监视' 검색 (갤러리에 표시되는 위젯 이름)
+
+```bash
+# 선택 사항: 다운로드 격리 속성을 한 번 지우면 이후에는 더블 클릭으로 열립니다
+xattr -dr com.apple.quarantine /Applications/MacStats.app
+
+# 또는 Homebrew
+brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
+brew trust yichensunjoe/macstats      # Homebrew 5+는 서드파티 tap을 명시적으로 신뢰해야 합니다
+brew install --cask macstats
+```
+
+다운로드 검증: `shasum -a 256 -c MacStats.zip.sha256` (체크섬은 Release에 첨부).
 
 <p align="center">
   <img src="../live-window.png" alt="MacStats 데스크톱 패널: CPU, 메모리, GPU, 에너지, 디스크, 네트워크와 메모리 상위 3개 프로세스" width="460" />
@@ -40,7 +60,7 @@
 > [!NOTE]
 > 데스크톱 패널은 바로 쓸 수 있습니다. 시스템 위젯 갤러리에 나오는 버전은 유효한 Apple Development 서명과 `/Applications` 설치가 필요합니다. 둘 다 `chronod`의 강제 조건이며 선택 사항이 아닙니다. 자세한 내용은 [시스템 위젯](#시스템-위젯)을 참고하세요.
 
-## 빠른 시작
+## 소스에서 빌드
 
 macOS 15 이상과 Xcode 명령줄 도구(Swift 6)가 필요합니다. 서드파티 의존성도, Xcode 프로젝트 파일도 없습니다.
 
@@ -147,7 +167,7 @@ src/Sources/MacStatsCore/    샘플링, 메모리 환산, 링 이력, 포매팅(
 src/Sources/MacStats/        SwiftUI 패널, 메뉴 막대 앱, 컨텍스트 메뉴, 오프스크린 렌더
 src/Sources/MacStatsWidget/  WidgetKit 확장: 타임라인 프로바이더 + 네 단계 뷰
 src/Sources/MacStatsDiag/    진단 CLI(--json / --raw / --self-check)
-src/Tests/                   XCTest, 91개
+src/Tests/                   XCTest, 103개
 scripts/bundle.sh            release 빌드, appex 조립, 서명, 설치, 등록
 docs/                        정확도 검증, 아키텍처, 요구 사항, 스크린숏
 ```
@@ -210,7 +230,9 @@ WidgetKit은 렌더 루프가 아니라 '예약된 스냅숏'입니다. 타임�
 - **시스템 위젯은 약 60초에 한 번 움직입니다.** WidgetKit의 스케줄 한도이며 앱에서 우회할 수 없습니다.
 - **에너지는 물리적 와트**이고 활동 모니터의 '에너지 영향' 점수가 아닙니다. 두 값은 단위가 대응하지 않습니다.
 - **프로세스 목록은 현재 사용자만** 포함하고 메모리 순으로 정렬합니다. 패널은 3개, 샘플링 계층은 최대 24개를 유지합니다.
-- **로컬 실시간 값만** 다룹니다. 이력 데이터베이스, 알림, 원격 모니터링은 없습니다.
+- **이력은 로컬에만, 분 단위까지**: 분마다 집계해 JSONL로 저장하고 7 / 30 / 90일 중 선택해 보관합니다. 클라우드 동기화나 초 단위 재생은 없습니다.
+- **알림은 세 항목만**: CPU / 메모리 / 디스크가 3회 연속 임계값을 넘을 때만 알리며 기본은 꺼져 있습니다. 온도, 팬, 단일 프로세스 이상은 감시하지 않습니다.
+- **원격 모니터링은 하지 않습니다**: 모든 측정값과 이력은 이 Mac에만 남고 네트워크로 전송되지 않습니다.
 
 ## 문서
 

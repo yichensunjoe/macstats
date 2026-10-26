@@ -8,18 +8,38 @@
 
 **CPU、記憶體、GPU、能耗、磁碟、網路，一眼看完；數值口徑逐項對齊活動監視器。**
 
-[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#快速開始)
+[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#安裝)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#實作方式)
-[![tests](https://img.shields.io/badge/tests-91%20passing-3fb950?style=flat-square)](#指令)
+[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#指令)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#實作方式)
 
-[快速開始](#快速開始) · [能看什麼](#能看什麼) · [兩種形態](#兩種形態) · [口徑對齊](#和活動監視器對到什麼程度) · [常見問題](#常見問題) · [限制](#已知限制)
+[安裝](#安裝) · [能看什麼](#能看什麼) · [兩種形態](#兩種形態) · [口徑對齊](#和活動監視器對到什麼程度) · [常見問題](#常見問題) · [限制](#已知限制)
 
-`bash scripts/bundle.sh`
+**[下載 MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · 拖進 `/Applications`，首次右鍵 →「打開」
 
 </div>
 
 ---
+
+## 安裝
+
+[**下載 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（約 2.4 MB，macOS 15+ / Apple 晶片）
+
+1. 解壓縮，把 `MacStats.app` 拖進 `/Applications`
+2. 右鍵 MacStats →「打開」，確認一次（**未公證**，原因與另一種放行方式見[安裝說明](../install.md)）
+3. 面板會出現在桌面；想要系統小工具，右鍵桌面 →「編輯小工具」→ 搜「系统监视」（小工具在系統中的名稱）
+
+```bash
+# 可選：清掉下載隔離屬性，之後雙擊即可
+xattr -dr com.apple.quarantine /Applications/MacStats.app
+
+# 或者用 Homebrew
+brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
+brew trust yichensunjoe/macstats      # Homebrew 5+ 需要明確信任第三方 tap
+brew install --cask macstats
+```
+
+下載校驗：`shasum -a 256 -c MacStats.zip.sha256`（校驗檔在 Release 裡）。
 
 <p align="center">
   <img src="../live-window.png" alt="MacStats 桌面面板：CPU、記憶體、GPU、能耗、磁碟、網路與記憶體佔用最高的程序" width="460" />
@@ -40,7 +60,7 @@ macOS 內建的活動監視器資訊夠完整，但它是一個視窗：要開�
 > [!NOTE]
 > 桌面懸浮面板開箱即用。系統「小工具庫」裡的那一份需要有效的 Apple Development 簽章，而且必須安裝到 `/Applications`——這兩條是 `chronod` 的硬性要求，不是選項，詳見[系統小工具](#系統小工具)。
 
-## 快速開始
+## 從原始碼建置
 
 需要 macOS 15 或更新版本、Xcode 命令列工具（Swift 6）。沒有第三方相依套件，也不需要 Xcode 專案檔。
 
@@ -147,7 +167,7 @@ src/Sources/MacStatsCore/    取樣、記憶體換算、環形歷史、格式化
 src/Sources/MacStats/        SwiftUI 面板、選單列 App、右鍵選單、離屏渲染
 src/Sources/MacStatsWidget/  WidgetKit 擴充：時間軸資料源 + 四段檢視
 src/Sources/MacStatsDiag/    診斷 CLI（--json / --raw / --self-check）
-src/Tests/                   XCTest，91 項
+src/Tests/                   XCTest，103 項
 scripts/bundle.sh            release 建置、組裝 appex、簽章、安裝、註冊
 docs/                        口徑對照、架構、需求與介面截圖
 ```
@@ -210,7 +230,9 @@ WidgetKit 不是渲染迴圈，而是「定時快照」：時間軸提供一筆�
 - **系統小工具約 60 秒一跳**，這是 WidgetKit 的排程上限，程式無法繞過。
 - **能耗是實體瓦數**，不是活動監視器的「能耗影響」分數，兩者沒有單位對應。
 - **程序清單只涵蓋目前使用者**，且依記憶體排序，面板顯示前 3、取樣層最多保留 24 筆。
-- **只做本機即時讀數**：不做歷史資料庫、不做告警、不做遠端監控。
+- **歷史只在本機、只到分鐘**：按分鐘聚合寫成 JSONL，可保留 7 / 30 / 90 天；沒有雲端同步，也沒有秒級回放。
+- **告警只看三項**：CPU / 記憶體 / 磁碟，連續 3 次超閾值才提醒，預設關閉；不監控溫度、風扇與單一程序異常。
+- **不做遠端監控**：所有讀數與歷史都留在本機，不上報網路。
 
 ## 文件
 

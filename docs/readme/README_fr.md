@@ -8,18 +8,38 @@
 
 **CPU, mémoire, GPU, énergie, disque et réseau d'un coup d'œil, chaque valeur alignée sur le Moniteur d'activité.**
 
-[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#démarrage-rapide)
+[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#installation)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#fonctionnement)
-[![tests](https://img.shields.io/badge/tests-91%20passing-3fb950?style=flat-square)](#commandes)
+[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#commandes)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#fonctionnement)
 
-[Démarrage rapide](#démarrage-rapide) · [Ce qui est affiché](#ce-qui-est-affiché) · [Deux surfaces](#deux-surfaces) · [Précision](#quel-point-de-précision-face-au-moniteur-dactivité) · [FAQ](#faq) · [Limites](#limites-connues)
+[Installation](#installation) · [Ce qui est affiché](#ce-qui-est-affiché) · [Deux surfaces](#deux-surfaces) · [Précision](#quel-point-de-précision-face-au-moniteur-dactivité) · [FAQ](#faq) · [Limites](#limites-connues)
 
-`bash scripts/bundle.sh`
+**[Télécharger MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · glissez-le dans `/Applications`, puis clic droit → « Ouvrir » au premier lancement
 
 </div>
 
 ---
+
+## Installation
+
+[**Télécharger MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (environ 2,4 Mo, macOS 15+ sur Apple Silicon)
+
+1. Décompressez et glissez `MacStats.app` dans `/Applications`
+2. Clic droit sur MacStats → « Ouvrir », puis confirmez une fois (**non notarisé** ; la raison et l'alternative en terminal sont dans les [notes d'installation](../install.md))
+3. Le panneau apparaît sur le bureau. Pour le widget WidgetKit : clic droit sur le bureau → « Modifier les widgets » → recherchez « 系统监视 » (le nom du widget dans la galerie)
+
+```bash
+# Facultatif : retirez une fois l'attribut de quarantaine, ensuite un double-clic suffit
+xattr -dr com.apple.quarantine /Applications/MacStats.app
+
+# Ou via Homebrew
+brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
+brew trust yichensunjoe/macstats      # Homebrew 5+ exige de faire confiance explicitement aux taps tiers
+brew install --cask macstats
+```
+
+Vérifiez le téléchargement avec `shasum -a 256 -c MacStats.zip.sha256` (l'empreinte est jointe à la release).
 
 <p align="center">
   <img src="../live-window.png" alt="Panneau MacStats : CPU, mémoire, GPU, énergie, disque, réseau et les trois processus les plus gourmands en mémoire" width="460" />
@@ -40,7 +60,7 @@ Ce n'est volontairement pas un tableau de bord plus gros. Les métriques sont le
 > [!NOTE]
 > Le panneau flottant fonctionne sans configuration. La copie présente dans la galerie de widgets du système exige une signature Apple Development valide et une installation dans `/Applications` : ce sont des contraintes de `chronod`, pas des préférences. Voir [Extension de widget](#extension-de-widget).
 
-## Démarrage rapide
+## Compiler depuis les sources
 
 Nécessite macOS 15 ou plus récent et les outils de ligne de commande Xcode (Swift 6). Aucune dépendance tierce, aucun projet Xcode.
 
@@ -147,7 +167,7 @@ src/Sources/MacStatsCore/    échantillonnage, calcul mémoire, historique circu
 src/Sources/MacStats/        panneau SwiftUI, app de barre des menus, menu contextuel, rendu hors écran
 src/Sources/MacStatsWidget/  extension WidgetKit : fournisseur de timelines + quatre vues
 src/Sources/MacStatsDiag/    CLI de diagnostic (--json / --raw / --self-check)
-src/Tests/                   XCTest, 91 cas
+src/Tests/                   XCTest, 103 cas
 scripts/bundle.sh            build release, assemblage de l'appex, signature, installation, enregistrement
 docs/                        notes de comparaison, architecture, exigences, captures
 ```
@@ -210,7 +230,9 @@ Le code n'utilise que des API publiques et devrait être portable, mais il n'a �
 - **Le widget système avance environ toutes les 60 secondes.** C'est la limite de planification de WidgetKit ; aucune app ne peut la contourner.
 - **L'énergie correspond à des watts physiques**, pas au score « Impact sur l'énergie » du Moniteur. Les deux n'ont pas d'équivalence d'unité.
 - **La liste des processus ne couvre que l'utilisateur courant**, triée par mémoire : le panneau en affiche trois, la couche d'échantillonnage en garde jusqu'à 24.
-- **Lectures locales en direct uniquement** : pas de base historique, pas d'alertes, pas de supervision à distance.
+- **L'historique reste local et s'arrête à la minute** : agrégé par minute et écrit en JSONL, conservé 7 / 30 / 90 jours au choix. Pas de synchronisation cloud ni de relecture à la seconde.
+- **Les alertes ne portent que sur trois valeurs** : CPU / mémoire / disque, après trois mesures consécutives au-dessus du seuil, désactivées par défaut. Ni température, ni ventilateurs, ni processus isolé.
+- **Pas de supervision à distance** : toutes les mesures et l'historique restent sur ce Mac et ne partent pas sur le réseau.
 
 ## Documentation
 

@@ -8,18 +8,38 @@
 
 **CPU、メモリ、GPU、電力、ディスク、ネットワークをひと目で。数値はアクティビティモニタに合わせて調整済み。**
 
-[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#クイックスタート)
+[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#インストール)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#仕組み)
-[![tests](https://img.shields.io/badge/tests-91%20passing-3fb950?style=flat-square)](#コマンド)
+[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#コマンド)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#仕組み)
 
-[クイックスタート](#クイックスタート) · [表示できる指標](#表示できる指標) · [2つの表示形態](#2つの表示形態) · [精度](#アクティビティモニタとの一致度) · [FAQ](#faq) · [既知の制限](#既知の制限)
+[インストール](#インストール) · [表示できる指標](#表示できる指標) · [2つの表示形態](#2つの表示形態) · [精度](#アクティビティモニタとの一致度) · [FAQ](#faq) · [既知の制限](#既知の制限)
 
-`bash scripts/bundle.sh`
+**[MacStats.zip をダウンロード](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · `/Applications` にドラッグし、初回は右クリック →「開く」
 
 </div>
 
 ---
+
+## インストール
+
+[**MacStats.zip をダウンロード**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（約 2.4 MB、macOS 15+ / Apple シリコン）
+
+1. 解凍し、`MacStats.app` を `/Applications` にドラッグ
+2. MacStats を右クリック →「開く」で一度確認（**公証なし**。理由とターミナルでの代替手順は[インストール手順](../install.md)へ）
+3. デスクトップにパネルが現れます。システムウィジェットは、デスクトップを右クリック →「ウィジェットを編集」→「系统监视」を検索（ギャラリーでのウィジェット名）
+
+```bash
+# 任意：ダウンロードの隔離属性を一度だけ解除すると、以後はダブルクリックで開けます
+xattr -dr com.apple.quarantine /Applications/MacStats.app
+
+# または Homebrew
+brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
+brew trust yichensunjoe/macstats      # Homebrew 5+ はサードパーティ tap の明示的な信頼が必要
+brew install --cask macstats
+```
+
+ダウンロードの検証：`shasum -a 256 -c MacStats.zip.sha256`（チェックサムは Release に添付）。
 
 <p align="center">
   <img src="../live-window.png" alt="MacStats のデスクトップパネル：CPU、メモリ、GPU、電力、ディスク、ネットワークとメモリ上位3プロセス" width="460" />
@@ -40,7 +60,7 @@
 > [!NOTE]
 > デスクトップパネルはそのまま動きます。システムの「ウィジェットギャラリー」に出るほうは、有効な Apple Development 署名と `/Applications` へのインストールが必須です。これは `chronod` の要件で、好みの問題ではありません。詳しくは[システムウィジェット](#システムウィジェット)を参照してください。
 
-## クイックスタート
+## ソースからビルド
 
 macOS 15 以降と Xcode コマンドラインツール（Swift 6）が必要です。サードパーティ依存も Xcode プロジェクトファイルもありません。
 
@@ -147,7 +167,7 @@ src/Sources/MacStatsCore/    サンプリング、メモリ換算、リング履
 src/Sources/MacStats/        SwiftUI パネル、メニューバーアプリ、コンテキストメニュー、オフスクリーン描画
 src/Sources/MacStatsWidget/  WidgetKit 拡張：タイムラインプロバイダ + 4段階のビュー
 src/Sources/MacStatsDiag/    診断 CLI（--json / --raw / --self-check）
-src/Tests/                   XCTest、91件
+src/Tests/                   XCTest、103件
 scripts/bundle.sh            release ビルド、appex 組み立て、署名、インストール、登録
 docs/                        精度の検証記録、アーキテクチャ、要件、スクリーンショット
 ```
@@ -210,7 +230,9 @@ WidgetKit は描画ループではなく「定時スナップショット」で�
 - **システムウィジェットは約60秒に1回。** WidgetKit のスケジューリング上限で、アプリ側では回避できません。
 - **電力は物理的なワット数**で、アクティビティモニタの「エネルギー影響」スコアではありません。両者に単位の対応はありません。
 - **プロセス一覧は現在のユーザーのみ**、メモリ順。パネルは3件、サンプリング層は最大24件を保持します。
-- **ローカルのライブ値のみ**：履歴データベース、アラート、リモート監視はありません。
+- **履歴はローカルのみ、粒度は分単位**：分ごとに集計して JSONL に書き、7 / 30 / 90 日を選んで保持します。クラウド同期も秒単位の再生もありません。
+- **アラートは3項目のみ**：CPU / メモリ / ディスクが3回連続でしきい値を超えたときだけ通知し、既定ではオフです。温度・ファン・単一プロセスの異常は監視しません。
+- **リモート監視はしません**：計測値と履歴はすべてこの Mac の中に留まり、ネットワークへ送信されません。
 
 ## ドキュメント
 

@@ -23,7 +23,7 @@
 
 ## 下载安装
 
-[**下载 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（约 2.2 MB，macOS 15+ / Apple 芯片）
+[**下载 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（约 2.4 MB，macOS 15+ / Apple 芯片）
 
 1. 解压，把 `MacStats.app` 拖进 `/Applications`
 2. 右键 MacStats →「打开」，确认一次（**未公证**，原因与另一种放行方式见[安装说明](docs/install.md)）
@@ -229,7 +229,7 @@ src/Sources/MacStatsCore/    采样、内存换算、环形历史、格式化、
 src/Sources/MacStats/        SwiftUI 面板、菜单栏 App、右侧菜单、离屏渲染
 src/Sources/MacStatsWidget/  WidgetKit 扩展：时间线数据源 + 四档视图
 src/Sources/MacStatsDiag/    诊断 CLI（--json / --raw / --self-check）
-src/Tests/                   XCTest，91 项
+src/Tests/                   XCTest，103 项
 assets/MacStats.icns         应用图标（打包时拷进 Contents/Resources）
 scripts/bundle.sh            release 构建、组装 appex、签名、安装、注册
 docs/                        口径对照、架构、需求与界面截图

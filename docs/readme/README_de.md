@@ -8,18 +8,38 @@
 
 **CPU, Speicher, GPU, Energie, Festplatte und Netzwerk auf einen Blick – jede Zahl an die Aktivitätsanzeige angeglichen.**
 
-[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#schnellstart)
+[![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#installation)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#funktionsweise)
-[![tests](https://img.shields.io/badge/tests-91%20passing-3fb950?style=flat-square)](#befehle)
+[![tests](https://img.shields.io/badge/tests-103%20passing-3fb950?style=flat-square)](#befehle)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#funktionsweise)
 
-[Schnellstart](#schnellstart) · [Was angezeigt wird](#was-angezeigt-wird) · [Zwei Oberflächen](#zwei-oberflächen) · [Genauigkeit](#wie-genau-ist-der-vergleich-mit-der-aktivitätsanzeige) · [FAQ](#faq) · [Bekannte Einschränkungen](#bekannte-einschränkungen)
+[Installation](#installation) · [Was angezeigt wird](#was-angezeigt-wird) · [Zwei Oberflächen](#zwei-oberflächen) · [Genauigkeit](#wie-genau-ist-der-vergleich-mit-der-aktivitätsanzeige) · [FAQ](#faq) · [Bekannte Einschränkungen](#bekannte-einschränkungen)
 
-`bash scripts/bundle.sh`
+**[MacStats.zip herunterladen](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · nach `/Applications` ziehen, beim ersten Start rechtsklicken → „Öffnen“
 
 </div>
 
 ---
+
+## Installation
+
+[**MacStats.zip herunterladen**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (ca. 2,4 MB, macOS 15+ auf Apple Silicon)
+
+1. Entpacken und `MacStats.app` nach `/Applications` ziehen
+2. MacStats rechtsklicken → „Öffnen“ und einmal bestätigen (**nicht notarisiert**; warum, und die Terminal-Alternative, steht in den [Installationshinweisen](../install.md))
+3. Das Panel erscheint auf dem Schreibtisch. Für das WidgetKit-Widget: Schreibtisch rechtsklicken → „Widgets bearbeiten“ → nach „系统监视“ suchen (der Name des Widgets in der Galerie)
+
+```bash
+# Optional: die Quarantäne-Attribute einmal entfernen, danach genügt ein Doppelklick
+xattr -dr com.apple.quarantine /Applications/MacStats.app
+
+# Oder über Homebrew
+brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
+brew trust yichensunjoe/macstats      # Homebrew 5+ verlangt explizites Vertrauen für Fremd-Taps
+brew install --cask macstats
+```
+
+Download prüfen: `shasum -a 256 -c MacStats.zip.sha256` (die Prüfsumme liegt beim Release).
 
 <p align="center">
   <img src="../live-window.png" alt="MacStats-Panel: CPU, Speicher, GPU, Energie, Festplatte, Netzwerk und die drei speicherhungrigsten Prozesse" width="460" />
@@ -40,7 +60,7 @@ Es soll bewusst kein größeres Dashboard sein. Die Messwerte sind die fünf der
 > [!NOTE]
 > Das schwebende Panel funktioniert sofort. Die Kopie in der System-Widgetgalerie braucht eine gültige Apple-Development-Signatur und muss in `/Applications` installiert sein – beides sind harte Anforderungen von `chronod`, keine Vorlieben. Siehe [System-Widget](#system-widget).
 
-## Schnellstart
+## Aus dem Quellcode bauen
 
 Vorausgesetzt werden macOS 15 oder neuer und die Xcode-Kommandozeilentools (Swift 6). Keine Fremdabhängigkeiten, kein Xcode-Projekt.
 
@@ -147,7 +167,7 @@ src/Sources/MacStatsCore/    Erfassung, Speicherumrechnung, Ringhistorie, Format
 src/Sources/MacStats/        SwiftUI-Panel, Menüleisten-App, Kontextmenü, Offline-Rendering
 src/Sources/MacStatsWidget/  WidgetKit-Erweiterung: Timeline-Provider + vier Ansichten
 src/Sources/MacStatsDiag/    Diagnose-CLI (--json / --raw / --self-check)
-src/Tests/                   XCTest, 91 Fälle
+src/Tests/                   XCTest, 103 Fälle
 scripts/bundle.sh            Release-Build, appex-Zusammenbau, Signierung, Installation, Registrierung
 docs/                        Abgleich, Architektur, Anforderungen, Screenshots
 ```
@@ -210,7 +230,9 @@ Der Code nutzt nur öffentliche APIs und sollte portabel sein, getestet wurde er
 - **Das System-Widget springt etwa alle 60 Sekunden.** Das ist die Grenze der WidgetKit-Planung; keine App kann sie umgehen.
 - **Energie sind physikalische Watt**, nicht der Wert „Energiebeeinflussung“ der Aktivitätsanzeige. Zwischen beiden besteht keine Einheitenbeziehung.
 - **Die Prozessliste umfasst nur den aktuellen Benutzer** und ist nach Speicher sortiert: Das Panel zeigt drei, die Erfassungsschicht hält bis zu 24.
-- **Nur lokale Live-Werte**: keine Historien-Datenbank, keine Warnungen, keine Fernüberwachung.
+- **Der Verlauf bleibt lokal und geht nur bis zur Minute**: pro Minute aggregiert und als JSONL geschrieben, wahlweise 7 / 30 / 90 Tage aufbewahrt. Keine Cloud-Synchronisierung, keine sekundengenaue Wiedergabe.
+- **Warnungen betreffen nur drei Werte**: CPU / Speicher / Festplatte, erst nach drei aufeinanderfolgenden Überschreitungen, standardmäßig aus. Temperatur, Lüfter und einzelne Prozesse werden nicht überwacht.
+- **Keine Fernüberwachung**: Alle Messwerte und der Verlauf bleiben auf diesem Mac und gehen nicht ins Netz.
 
 ## Dokumentation
 

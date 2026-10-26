@@ -23,11 +23,11 @@
 
 ## Install
 
-[**Download MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (about 2.2 MB, macOS 15+ on Apple silicon)
+[**Download MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (about 2.4 MB, macOS 15+ on Apple silicon)
 
 1. Unzip it and drag `MacStats.app` into `/Applications`
 2. Right-click MacStats → Open once. The build is **signed but not notarized**; see [install notes](../install.md) for why, and for the terminal alternative
-3. The panel appears on the desktop. For the WidgetKit widget: right-click the desktop → Edit Widgets → search “MacStats”
+3. The panel appears on the desktop. For the WidgetKit widget: right-click the desktop → Edit Widgets → search “系统监视” (the widget's name in the gallery)
 
 ```bash
 # Optional: clear the download quarantine once, then double-click works
@@ -211,7 +211,7 @@ src/Sources/MacStatsCore/    sampling, memory math, ring history, formatting (no
 src/Sources/MacStats/        SwiftUI panel, menu bar app, context menu, offscreen rendering
 src/Sources/MacStatsWidget/  WidgetKit extension: timeline provider + four view tiers
 src/Sources/MacStatsDiag/    diagnostic CLI (--json / --raw / --self-check)
-src/Tests/                   XCTest, 91 cases
+src/Tests/                   XCTest, 103 cases
 assets/MacStats.icns         app icon (copied into Contents/Resources when bundling)
 scripts/bundle.sh            release build, appex assembly, signing, install, registration
 docs/                        alignment notes, architecture, requirements, screenshots
@@ -277,10 +277,12 @@ The code only uses public APIs and should be portable, but it has been tested on
 - **The system widget ticks about once every 60 seconds.** That is WidgetKit's scheduling limit; no app can bypass it.
 - **Energy is physical watts**, not Activity Monitor's "Energy Impact" score. The two have no unit correspondence.
 - **The process list covers the current user only**, sorted by memory: the panel shows three, the sampling layer keeps up to 24.
-- **Cleanup does not touch file cache or VRAM**: purging the file cache needs `sudo purge`, VRAM is only released by quitting the app using it, and the panel does not measure GPU at all.
+- **Cleanup does not touch file cache or VRAM**: purging the file cache needs `sudo purge`, and VRAM is only released by quitting the app using it. The panel reads GPU utilization and memory use; it does not free them.
 - **Cleanup does not handle true zombies**: a `Z` process has already exited and only its parent can reap it.
 - **launchd-managed jobs come back**: even one-shot `launchctl submit` jobs are restarted (observed `runs = 2`), so cleanup only frees memory for the gap; most real services are excluded by the socket rule anyway.
-- **Local live readings only**: no history database, no alerts, no remote monitoring.
+- **History is local and minute-resolution**: aggregated per minute into JSONL, retained for 7 / 30 / 90 days. No cloud sync, no per-second replay.
+- **Alerts cover three metrics only**: CPU / memory / disk, after three consecutive samples over the threshold, off by default. No temperature, fan or single-process monitoring.
+- **No remote monitoring**: every reading and all history stay on this Mac and never go to the network.
 
 ## Documentation
 
