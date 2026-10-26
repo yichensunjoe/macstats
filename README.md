@@ -35,6 +35,7 @@ xattr -dr com.apple.quarantine /Applications/MacStats.app
 
 # 或者用 Homebrew
 brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
+brew trust yichensunjoe/macstats      # Homebrew 5+ 需要显式信任第三方 tap
 brew install --cask macstats
 ```
 

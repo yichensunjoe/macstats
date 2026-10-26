@@ -35,6 +35,7 @@ xattr -dr com.apple.quarantine /Applications/MacStats.app
 
 # Or use Homebrew
 brew tap yichensunjoe/macstats https://github.com/yichensunjoe/macstats
+brew trust yichensunjoe/macstats      # Homebrew 5+ requires trusting third-party taps
 brew install --cask macstats
 ```
 
