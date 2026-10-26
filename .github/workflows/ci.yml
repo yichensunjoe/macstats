@@ -1,0 +1,49 @@
+# MacStats CI：编译/单测 → release 归档（ad-hoc 签名）→ 归档完整性 → 文档一致性。
+# 注意：CI 没有 Apple Development 证书，bundle.sh 会走 ad-hoc 签名；这只证明包完整，
+# 不代表 WidgetKit 在真机上可用（见 docs/roadmap-v0.4/D-release-infrastructure.md §3 D1）。
+name: CI
+
+# 加引号是为了让本地 PyYAML（YAML 1.1 会把裸 on 解析成布尔 true）也能按字符串读取；
+# GitHub Actions 对 "on" 与 on 的语义一致。
+"on":
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: swift --version
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: src/.build
+          key: "${{ runner.os }}-swift-${{ hashFiles('src/Package.swift', 'src/Package.resolved') }}"
+
+      - name: Test
+        run: cd src && swift test
+
+      - name: Archive
+        run: bash scripts/bundle.sh --archive
+
+      - name: Verify archive
+        run: |
+          codesign --verify --deep --strict --verbose=2 MacStats.app
+          unzip -t dist/MacStats.zip
+          (cd dist && shasum -a 256 -c MacStats.zip.sha256)
+
+      # TODO: D2 合并后、0.4 发布前必须去掉 continue-on-error（check-docs.py 由 D2 产出）。
+      - name: Docs consistency
+        continue-on-error: true
+        run: python3 scripts/check-docs.py
