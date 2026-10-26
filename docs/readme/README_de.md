@@ -244,4 +244,4 @@ Die ausführlichen Notizen sind auf Chinesisch.
 
 ## Lizenz
 
-Es wurde noch keine Open-Source-Lizenz gewählt, daher bleiben alle Rechte vorbehalten. Wer Teile der Implementierung wiederverwenden möchte, öffnet bitte ein Issue mit dem Verwendungszweck.
+Veröffentlicht unter der [MIT-Lizenz](../../LICENSE). Nutzung, Änderung und Weitergabe – auch kommerziell – sind frei, solange Copyright-Hinweis und Lizenztext erhalten bleiben.

@@ -244,4 +244,4 @@ Les notes détaillées sont en chinois.
 
 ## Licence
 
-Aucune licence open source n'a encore été choisie, donc tous droits réservés. Pour réutiliser une partie de l'implémentation, ouvrez une issue en précisant l'usage.
+Publié sous [licence MIT](../../LICENSE). Utilisation, modification et distribution — y compris commerciales — sont libres, à condition de conserver la mention de copyright et le texte de la licence.

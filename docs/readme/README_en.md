@@ -296,4 +296,4 @@ Deeper write-ups are in Chinese.
 
 ## License
 
-No open-source license has been chosen yet, so all rights are reserved. If you want to reuse part of the implementation, open an issue describing what for.
+Released under the [MIT License](../../LICENSE). You are free to use, modify and distribute it, including commercially, as long as the copyright notice and license text are kept.
