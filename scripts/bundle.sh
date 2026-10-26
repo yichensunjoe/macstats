@@ -6,8 +6,8 @@
 #   scripts/bundle.sh              打包到 <项目>/MacStats.app，再安装到 /Applications 并注册扩展
 #   scripts/bundle.sh --archive    只出可分发包：dist/MacStats.zip + .sha256，不安装、不启动
 #
-# 版本取自仓库根的 VERSION 文件，可用 MACSTATS_VERSION / MACSTATS_BUILD 覆盖；
-# 产物目录可用 MACSTATS_DIST 覆盖（默认 <项目>/dist）。
+# 版本取自仓库根的 VERSION 文件，构建号取自仓库根的 BUILD 文件（唯一来源）；
+# 分别可用 MACSTATS_VERSION / MACSTATS_BUILD 覆盖；产物目录可用 MACSTATS_DIST 覆盖（默认 <项目>/dist）。
 #
 # 为什么必须装到 /Applications：chronod 只从系统应用目录发现小组件宿主，
 # 放在 ~/Applications 或项目目录里会被记成 "Ignoring restricted or unknown extension"。
@@ -26,7 +26,11 @@ WIDGET_ID="com.macstats.app.widget"
 # chronod 可能把扩展当成旧版本缓存起来。
 VERSION="$(tr -d '[:space:]' < "$ROOT/VERSION" 2>/dev/null || true)"
 VERSION="${MACSTATS_VERSION:-${VERSION:-0.1}}"
-BUILD="${MACSTATS_BUILD:-3}"
+# 构建号单一来源：仓库根的 BUILD（纯数字，末尾换行）。发布时只改 BUILD，不再改脚本；
+# 主程序与 appex 写同一个值。MACSTATS_BUILD 可临时覆盖（本地验证用），优先级高于 BUILD。
+# 不用 git rev-list --count：CI 的 shallow clone 只有 1 个提交，会得到 1。
+BUILD="$(tr -d '[:space:]' < "$ROOT/BUILD" 2>/dev/null || true)"
+BUILD="${MACSTATS_BUILD:-${BUILD:-1}}"
 DIST="${MACSTATS_DIST:-$ROOT/dist}"
 
 ARCHIVE=0
