@@ -301,7 +301,8 @@ public struct CleanupResult: Sendable {
     public var terminated: [CleanupCandidate]
     /// 收到信号但 3 秒内仍在运行（例如正在保存、或在被 launchd 重启）。
     public var survived: [CleanupCandidate]
-    /// 按终止前的 RSS 估算释放量；实际释放由内核回收，可能略有出入。
+    /// 候选进程终止前的 RSS 合计，不是系统实际回收量：
+    /// macOS 会保留缓存、共享页与压缩页，RSS 也不等于物理内存。
     public var freedBytes: UInt64
 }
 

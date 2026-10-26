@@ -102,7 +102,7 @@ final class LocalizationTests: XCTestCase {
     func testNewFormatKeys() {
         L10n.shared.setLanguage(.zhHans)
         XCTAssertEqual(L10n.format(.confirmCleanupTitle, 3), "清理 3 个后台闲置进程？")
-        XCTAssertEqual(L10n.format(.confirmCleanupSubtitle, "50 MB"), "预计释放约 50 MB 内存。只会请它们正常退出，不会强制结束。")
+        XCTAssertEqual(L10n.format(.confirmCleanupSubtitle, "50 MB"), "这些进程终止前的内存合计约 50 MB。只会请它们正常退出，不会强制结束。")
         XCTAssertEqual(L10n.format(.resultTerminatedOnly, 5), "已清理 5 个进程")
         XCTAssertEqual(L10n.format(.resultTerminatedAndRunning, 5, 2), "已清理 5 个，2 个仍在运行")
         XCTAssertEqual(L10n.format(.nothingToCleanScannedSummary, 100, 95), "这次扫了 100 个进程，95 个按上面的规则排除了。")
@@ -110,11 +110,73 @@ final class LocalizationTests: XCTestCase {
 
         L10n.shared.setLanguage(.en)
         XCTAssertEqual(L10n.format(.confirmCleanupTitle, 3), "Terminate 3 idle processes?")
-        XCTAssertEqual(L10n.format(.confirmCleanupSubtitle, "50 MB"), "Estimated to free ~50 MB memory. Sends SIGTERM for graceful exit.")
+        XCTAssertEqual(L10n.format(.confirmCleanupSubtitle, "50 MB"), "Their reported footprint is about 50 MB. Sends SIGTERM for graceful exit.")
         XCTAssertEqual(L10n.format(.resultTerminatedOnly, 5), "Terminated 5 processes")
         XCTAssertEqual(L10n.format(.resultTerminatedAndRunning, 5, 2), "Terminated 5, 2 still running")
         XCTAssertEqual(L10n.format(.nothingToCleanScannedSummary, 100, 95), "Scanned 100 processes; 95 excluded by safety rules.")
         XCTAssertEqual(L10n.format(.statusToolTip, "12%", "45%", "8.5 W"), "CPU 12% · Memory 45% · Energy 8.5 W")
+    }
+
+    /// B6a：清理相关界面不再承诺「已释放」内存。
+    /// `CleanupResult.freedBytes` 只是候选进程终止前的 RSS 合计，不是系统实际回收量；
+    /// 文案必须说清楚，否则活动监视器数字对不上会毁掉整块面板的可信度。
+    /// E §6 验收门要求「清理：确认框文案不含「释放」」，所以确认框副标题也纳入断言。
+    func testCleanupResultCopyDoesNotPromiseFreedMemory() {
+        // key 仍在，且中英都有非空文案（只改文案值，不改 key 名）。
+        for key in [L10nKey.resultFreedBytes, L10nKey.confirmCleanupSubtitle] {
+            XCTAssertTrue(L10nKey.allCases.contains(key))
+            for lang in [ResolvedLanguage.zhHans, ResolvedLanguage.en] {
+                let template = L10n.string(key, lang: lang)
+                XCTAssertFalse(template.isEmpty, "Missing \(key) for \(lang)")
+            }
+        }
+
+        // 清理确认框与结果框用到的全部 key 都不出现「释放 / freed」。
+        let cleanupCopyKeys: [L10nKey] = [
+            .confirmCleanupTitle,
+            .confirmCleanupSubtitle,
+            .confirmCleanupNote,
+            .cleanupResult,
+            .resultTerminatedOnly,
+            .resultTerminatedAndRunning,
+            .resultFreedBytes,
+            .resultSurvivedNote,
+            .cleanupTerminated,
+            .cleanupStillRunning,
+            .done
+        ]
+        for lang in [ResolvedLanguage.zhHans, ResolvedLanguage.en] {
+            L10n.shared.setLanguage(lang == .zhHans ? .zhHans : .en)
+            for key in cleanupCopyKeys {
+                let text = L10n.string(key, lang: lang)
+                XCTAssertFalse(text.contains("释放"), "\(lang) 清理文案 \(key) 仍出现「释放」：\(text)")
+                XCTAssertFalse(text.lowercased().contains("freed"), "\(lang) cleanup copy \(key) still says freed: \(text)")
+            }
+        }
+
+        L10n.shared.setLanguage(.zhHans)
+        XCTAssertEqual(
+            L10n.format(.resultFreedBytes, "1.2 GB"),
+            "这些进程终止前的内存合计为 1.2 GB；系统实际回收量可能不同。"
+        )
+        // 确认框副标题只报 RSS 合计，不再承诺释放量。
+        XCTAssertEqual(
+            L10n.format(.confirmCleanupSubtitle, "1.2 GB"),
+            "这些进程终止前的内存合计约 1.2 GB。只会请它们正常退出，不会强制结束。"
+        )
+        // 结果框标题保持「已清理 N 个进程」。
+        XCTAssertEqual(L10n.format(.resultTerminatedOnly, 5), "已清理 5 个进程")
+
+        L10n.shared.setLanguage(.en)
+        XCTAssertEqual(
+            L10n.format(.resultFreedBytes, "1.2 GB"),
+            "Their reported footprint was 1.2 GB; actual reclaim may differ."
+        )
+        XCTAssertEqual(
+            L10n.format(.confirmCleanupSubtitle, "1.2 GB"),
+            "Their reported footprint is about 1.2 GB. Sends SIGTERM for graceful exit."
+        )
+        XCTAssertEqual(L10n.format(.resultTerminatedOnly, 5), "Terminated 5 processes")
     }
 
     func testAppAppearanceAndAccentTintColor() {
