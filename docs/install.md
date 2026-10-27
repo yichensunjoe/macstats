@@ -84,7 +84,18 @@ Homebrew 不会替你清隔离属性，首次启动仍要按上一节放行（�
 4. **系统小组件不出现**：确认 App 在 `/Applications`（不是下载目录或 `~/Applications`）、
    至少启动过一次，然后 `killall chronod NotificationCenter`，再打开一次 App。
    同一台机器只应注册一份 App。
-5. **Homebrew 报 untrusted tap**：Homebrew 5 起第三方 tap 必须显式信任，先执行
+5. **升级后小组件还停在旧版本**：把新的 `MacStats.app` 覆盖进 `/Applications` 不会自动刷新扩展注册，
+   系统可能继续按旧构建记录加载小组件。先退出并重开一次 App；仍然如此就在终端强制重新注册：
+
+   ```bash
+   /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/MacStats.app
+   pluginkit -a /Applications/MacStats.app/Contents/PlugIns/MacStatsWidget.appex
+   pluginkit -m -v -i com.macstats.app.widget    # 输出的版本号应已是新版本
+   ```
+
+   版本号变了但桌面上的小组件还是旧样子，就从「编辑小组件」里移除再重新添加一次。
+   仍不生效时重启一次，`pkd` 会在开机时重建扩展索引。
+6. **Homebrew 报 untrusted tap**：Homebrew 5 起第三方 tap 必须显式信任，先执行
    `brew trust yichensunjoe/macstats`，再 `brew install --cask macstats`；
    `brew untrust yichensunjoe/macstats` 可撤回信任。Homebrew 不会替你清隔离属性，
    首次启动仍要按上一节放行。
