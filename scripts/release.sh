@@ -10,6 +10,8 @@
 #                     调用 scripts/check-docs.py --fix，打印 git diff；不 commit / tag / push。
 #   --publish          严格前置检查（干净 main + meta 匹配 + 无同名 tag）后打 tag、push、
 #                     gh release create，并做匿名下载 sha 校验；必须同时传 --yes。
+#                     若本次归档字节数与 docs/_meta.json 不一致（签名值每次不同），
+#                     先把 meta 对齐到本次归档并提交，再打 tag——保证 meta 与上传包一致。
 #
 # 安全：
 #   - 不使用 set -x；不读取 / 不打印任何 token（gh 认证交给现有 gh 登录）；
@@ -64,6 +66,7 @@ usage() {
               调用 scripts/check-docs.py --fix，打印 git diff；不 commit / tag / push。
   --publish   严格前置检查（干净 main + meta 匹配 + 无同名 tag）后打 tag、push、
               gh release create，并做匿名下载 sha 校验；必须同时传 --yes。
+              meta 的 zip_bytes 与本次归档不一致时，会先更新并提交 docs/_meta.json。
   --yes       显式授权 --publish（发布是外部操作，需要人工确认）。
   -h, --help  显示本帮助。
 
@@ -397,6 +400,31 @@ publish_failed() {
   exit 1
 }
 
+# 归档字节无法跨构建稳定：真机签名使用 ECDSA，每次签名的 signatureValue 都不同
+# （同一份内容 CDHash 相同、签名值不同）。所以发布时不试图让 zip 逐字节一致，
+# 而是保证 docs/_meta.json 记录的就是本次真正上传的那个包，并在打 tag 前提交。
+sync_meta_for_publish() {
+  local meta_bytes
+  meta_bytes="$(meta_field zip_bytes)"
+  if [ "$meta_bytes" = "$ZIP_BYTES" ]; then
+    info "docs/_meta.json zip_bytes 与本次归档一致（${ZIP_BYTES}）"
+    return 0
+  fi
+  say "docs/_meta.json zip_bytes=${meta_bytes:-无法读取} 与本次归档 ${ZIP_BYTES} 不一致；对齐后提交"
+  write_meta
+  git add docs/_meta.json
+  git commit -m "chore: sync release metadata with archive" >/dev/null
+  info "已提交 docs/_meta.json（$(git rev-parse --short HEAD)）"
+  if [ ! -f "$ROOT/scripts/check-docs.py" ]; then
+    warn "未找到 scripts/check-docs.py，跳过 meta 变更后的文档校验"
+    return 0
+  fi
+  say "校验文档一致性（meta 变更后）"
+  if ! python3 "$ROOT/scripts/check-docs.py"; then
+    die "check-docs 失败；meta 已提交但与 README 不一致，请修正后重跑 --publish"
+  fi
+}
+
 verify_anonymous_download() {
   say "匿名下载校验（releases/latest）"
   local code="" i tmp actual expected
@@ -459,6 +487,7 @@ do_publish() {
   run_archive
   release_lock
   check_meta_consistency
+  sync_meta_for_publish
   publish_steps
 }
 

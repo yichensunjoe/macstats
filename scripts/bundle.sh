@@ -142,9 +142,18 @@ if [ "$ARCHIVE" = "1" ]; then
   mkdir -p "$DIST"
   ZIP="$DIST/MacStats.zip"
   rm -f "$ZIP" "$ZIP.sha256"
+  # 归档时间戳固定：cp 每次会把包内文件的 mtime 重置为当前时间，ditto 又把它写进 zip，
+  # 于是同样的内容每次构建都差几个字节。固定后漂移只剩签名值本身（真机 ECDSA 签名每次
+  # 不同，见 release.sh 的 sync_meta_for_publish）；签名只校验内容、不看 mtime，不影响 codesign。
+  # 把所有条目（含目录，--sequesterRsrc 的 __MACOSX 条目也跟随它的 mtime）固定到同一时刻。
+  ARCHIVE_STAMP="${MACSTATS_ARCHIVE_STAMP:-202001010000}"
+  echo "==> 固定包内时间戳（${ARCHIVE_STAMP}）"
+  find "$APP" -exec touch -h -t "$ARCHIVE_STAMP" {} +
   echo "==> 归档 $ZIP"
   # --keepParent 让解压出来就是 MacStats.app，而不是把内容散在下载目录。
-  ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+  # --norsrc --noextattr：不生成 __MACOSX（那是 ditto 打包时新建的目录，时间戳是当下，
+  # 会把上面固定好的时间重新打回不确定），也不带源的 quarantine/macl 等扩展属性。
+  ditto -c -k --norsrc --noextattr --keepParent "$APP" "$ZIP"
   ( cd "$DIST" && shasum -a 256 "MacStats.zip" | tee "MacStats.zip.sha256" )
 
   echo "==> 产物"
