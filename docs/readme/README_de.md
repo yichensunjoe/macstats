@@ -15,7 +15,7 @@
 
 [Installation](#installation) · [Was angezeigt wird](#was-angezeigt-wird) · [Zwei Oberflächen](#zwei-oberflächen) · [Genauigkeit](#wie-genau-ist-der-vergleich-mit-der-aktivitätsanzeige) · [FAQ](#faq) · [Bekannte Einschränkungen](#bekannte-einschränkungen)
 
-**[MacStats.zip herunterladen](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · nach `/Applications` ziehen, beim ersten Start rechtsklicken → „Öffnen“
+**[MacStats.zip herunterladen](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · nach `/Applications` ziehen, beim ersten Start in den Systemeinstellungen über „Trotzdem öffnen“ erlauben
 
 </div>
 
@@ -26,7 +26,7 @@
 [**MacStats.zip herunterladen**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (ca. 2,5 MB, macOS 15+ auf Apple Silicon)
 
 1. Entpacken und `MacStats.app` nach `/Applications` ziehen
-2. MacStats rechtsklicken → „Öffnen“ und einmal bestätigen (**nicht notarisiert**; warum, und die Terminal-Alternative, steht in den [Installationshinweisen](../install.md))
+2. Der erste Start wird blockiert (**nicht notarisiert**): im Dialog „Fertig“ klicken, dann Systemeinstellungen → Datenschutz & Sicherheit → „Trotzdem öffnen“; alternativ das Quarantäne-Attribut im Terminal entfernen. Warum, und beide Wege, stehen in den [Installationshinweisen](../install.md)
 3. Das Panel erscheint auf dem Schreibtisch. Für das WidgetKit-Widget: Schreibtisch rechtsklicken → „Widgets bearbeiten“ → nach „系统监视“ suchen (der Name des Widgets in der Galerie)
 
 ```bash

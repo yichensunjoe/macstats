@@ -17,7 +17,7 @@
 
 [下载安装](#下载安装) · [能看什么](#能看什么) · [两种形态](#两种形态) · [24 小时历史](#24-小时历史与持续高负载提醒) · [口径对齐](#和活动监视器对到什么程度) · [常见问题](#常见问题) · [限制](#已知限制)
 
-**[下载 MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · 拖进 `/Applications`，首次右键 →「打开」
+**[下载 MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · 拖进 `/Applications`，首次启动在系统设置里点「仍要打开」
 
 </div>
 
@@ -30,10 +30,10 @@
 > **下载的包叫 MacStats，装好后显示名是 MacStats Panel。** Release 里的文件是 `MacStats.zip`，解压出来是 `MacStats.app`；Finder、启动台、菜单栏显示的是 MacStats Panel。同一个 App，Bundle ID 仍是 `com.macstats.app`，偏好与已添加的小组件都不受影响。
 
 1. 解压，把 `MacStats.app` 拖进 `/Applications`
-2. 右键 MacStats Panel →「打开」，确认一次（**未公证**，原因与其它放行方式见[安装说明](docs/install.md)）
+2. 第一次打开会被拦下（**未公证**）：点弹窗里的「完成」，去 **系统设置 → 隐私与安全性 → 安全性** 点「仍要打开」；或在终端清隔离属性，原因与细节见[安装说明](docs/install.md)
 3. 面板出现在桌面；想要系统小组件，右键桌面 →「编辑小组件」→ 搜「系统监视」
 
-放行只对这一次下载生效：重新下载、覆盖安装或升级后可能再被拦一次，照旧右键 →「打开」。
+放行按构建记录：同一份构建重装不会再问，**换了版本会重新拦一次**。「右键 →「打开」」在 macOS 14 及更早有效，macOS 15 起弹窗里已经没有「打开」按钮（实测 macOS 27：只有「完成」与「移到废纸篓」）。
 
 第 1 步不能省：系统小组件只从 `/Applications` 发现扩展宿主，放在下载目录或 `~/Applications` 里，小组件库中不会出现 MacStats Panel。
 
@@ -45,7 +45,7 @@ shasum -a 256 -c MacStats.zip.sha256
 
 输出 `MacStats.zip: OK` 表示文件完整；失败就重新下载，不要继续安装。
 
-**另外两种可选方式**（终端清隔离属性 / Homebrew）：
+**另两种可选方式**（系统设置放行 / 终端清隔离属性 / Homebrew）：
 
 ```bash
 # 1. 清掉下载隔离属性，之后正常打开
@@ -60,11 +60,11 @@ brew install --cask macstats
 
 **装不上时先看这里**：
 
-1. **Gatekeeper 拦截**：用上面的方式放行（右键 →「打开」，或清隔离属性）；也可以在系统设置 → 隐私与安全性里点「仍要打开」。提示「App 已损坏，无法打开」多半是下载不完整——先跑 sha256 校验，失败就重新下载；校验通过仍报损坏，用清隔离属性的方式再打开。
+1. **Gatekeeper 拦截**：按上面的方式放行（系统设置里点「仍要打开」，或清隔离属性）。提示「App 已损坏，无法打开」多半是下载不完整——先跑 sha256 校验，失败就重新下载；校验通过仍报损坏，用清隔离属性的方式再打开。
 2. **架构不对**：只提供 Apple 芯片（arm64）包，Intel Mac 无法运行，也没有 Rosetta 版本。`uname -m` 应输出 `arm64`。
 3. **系统版本太低**：需要 macOS 15（Sequoia）或更新，`sw_vers -productVersion` 确认。
 4. **系统小组件不出现**：确认 App 在 `/Applications`（不是下载目录或 `~/Applications`）、至少启动过一次，然后 `killall chronod NotificationCenter`，再打开一次 App；一台机器只应注册一份。
-5. **Homebrew 报 untrusted tap**：Homebrew 5 起第三方 tap 必须先 `brew trust yichensunjoe/macstats` 再 `brew install --cask macstats`；`brew untrust yichensunjoe/macstats` 可撤回。Homebrew 不会替你清隔离属性，首次启动仍可能需要右键放行。
+5. **Homebrew 报 untrusted tap**：Homebrew 5 起第三方 tap 必须先 `brew trust yichensunjoe/macstats` 再 `brew install --cask macstats`；`brew untrust yichensunjoe/macstats` 可撤回。Homebrew 不会替你清隔离属性，首次启动仍需按上面放行。
 
 **卸载**：先退出 App（菜单栏图标 → 退出），再 `rm -rf /Applications/MacStats.app`；Homebrew 装的用 `brew uninstall --cask macstats`。偏好与快照留在 `~/Library/Application Support/MacStats/` 和 `~/Library/Preferences/com.macstats.app.plist`，需要彻底清掉时一并删除。
 

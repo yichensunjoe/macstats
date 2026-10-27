@@ -15,7 +15,7 @@
 
 [安裝](#安裝) · [能看什麼](#能看什麼) · [兩種形態](#兩種形態) · [口徑對齊](#和活動監視器對到什麼程度) · [常見問題](#常見問題) · [限制](#已知限制)
 
-**[下載 MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · 拖進 `/Applications`，首次右鍵 →「打開」
+**[下載 MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · 拖進 `/Applications`，首次啟動在系統設定裡點「仍要打開」
 
 </div>
 
@@ -26,7 +26,7 @@
 [**下載 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（約 2.5 MB，macOS 15+ / Apple 晶片）
 
 1. 解壓縮，把 `MacStats.app` 拖進 `/Applications`
-2. 右鍵 MacStats →「打開」，確認一次（**未公證**，原因與另一種放行方式見[安裝說明](../install.md)）
+2. 第一次啟動會被攔下（**未公證**）：按彈窗裡的「完成」，到 **系統設定 → 隱私權與安全性** 點「仍要打開」，或在終端機清掉隔離屬性（原因與兩種方式見[安裝說明](../install.md)）
 3. 面板會出現在桌面；想要系統小工具，右鍵桌面 →「編輯小工具」→ 搜「系统监视」（小工具在系統中的名稱）
 
 ```bash

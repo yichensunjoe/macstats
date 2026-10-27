@@ -15,7 +15,7 @@
 
 [Instalación](#instalación) · [Qué muestra](#qué-muestra) · [Dos superficies](#dos-superficies) · [Exactitud](#cuánto-se-acerca-al-monitor-de-actividad) · [FAQ](#faq) · [Limitaciones](#limitaciones-conocidas)
 
-**[Descargar MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · arrástralo a `/Applications` y ábrelo una vez con clic derecho → «Abrir»
+**[Descargar MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · arrástralo a `/Applications` y, en el primer inicio, permítelo en Ajustes del Sistema → «Abrir igualmente»
 
 </div>
 
@@ -26,7 +26,7 @@
 [**Descargar MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (unos 2,5 MB, macOS 15+ en Apple Silicon)
 
 1. Descomprime y arrastra `MacStats.app` a `/Applications`
-2. Haz clic derecho en MacStats → «Abrir» y confirma una vez (**sin notarizar**; el motivo y la alternativa por terminal están en las [notas de instalación](../install.md))
+2. El primer inicio se bloquea (**sin notarizar**): pulsa «Listo» en el aviso y luego Ajustes del Sistema → Privacidad y seguridad → «Abrir igualmente»; o elimina el atributo de cuarentena en el terminal. El motivo y ambas vías están en las [notas de instalación](../install.md)
 3. El panel aparece en el escritorio. Para el widget de WidgetKit: clic derecho en el escritorio → «Editar widgets» → busca «系统监视» (el nombre del widget en la galería)
 
 ```bash

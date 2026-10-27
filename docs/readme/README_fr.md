@@ -15,7 +15,7 @@
 
 [Installation](#installation) · [Ce qui est affiché](#ce-qui-est-affiché) · [Deux surfaces](#deux-surfaces) · [Précision](#quel-point-de-précision-face-au-moniteur-dactivité) · [FAQ](#faq) · [Limites](#limites-connues)
 
-**[Télécharger MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · glissez-le dans `/Applications`, puis clic droit → « Ouvrir » au premier lancement
+**[Télécharger MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · glissez-le dans `/Applications`, puis autorisez-le au premier lancement via Réglages Système → « Ouvrir quand même »
 
 </div>
 
@@ -26,7 +26,7 @@
 [**Télécharger MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (environ 2,4 Mo, macOS 15+ sur Apple Silicon)
 
 1. Décompressez et glissez `MacStats.app` dans `/Applications`
-2. Clic droit sur MacStats → « Ouvrir », puis confirmez une fois (**non notarisé** ; la raison et l'alternative en terminal sont dans les [notes d'installation](../install.md))
+2. Le premier lancement est bloqué (**non notarisé**) : cliquez sur « OK » dans l'alerte, puis Réglages Système → Confidentialité et sécurité → « Ouvrir quand même » ; ou supprimez l'attribut de quarantaine en terminal. La raison et les deux voies sont dans les [notes d'installation](../install.md)
 3. Le panneau apparaît sur le bureau. Pour le widget WidgetKit : clic droit sur le bureau → « Modifier les widgets » → recherchez « 系统监视 » (le nom du widget dans la galerie)
 
 ```bash

@@ -15,7 +15,7 @@
 
 [インストール](#インストール) · [表示できる指標](#表示できる指標) · [2つの表示形態](#2つの表示形態) · [精度](#アクティビティモニタとの一致度) · [FAQ](#faq) · [既知の制限](#既知の制限)
 
-**[MacStats.zip をダウンロード](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · `/Applications` にドラッグし、初回は右クリック →「開く」
+**[MacStats.zip をダウンロード](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · `/Applications` にドラッグし、初回はシステム設定の「このまま開く」で許可
 
 </div>
 
@@ -26,7 +26,7 @@
 [**MacStats.zip をダウンロード**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（約 2.5 MB、macOS 15+ / Apple シリコン）
 
 1. 解凍し、`MacStats.app` を `/Applications` にドラッグ
-2. MacStats を右クリック →「開く」で一度確認（**公証なし**。理由とターミナルでの代替手順は[インストール手順](../install.md)へ）
+2. 初回起動はブロックされます（**公証なし**）。ダイアログの「完了」を押し、システム設定 → プライバシーとセキュリティ →「このまま開く」で許可します（ターミナルで隔離属性を消す方法もあります。理由と手順は[インストール手順](../install.md)へ）
 3. デスクトップにパネルが現れます。システムウィジェットは、デスクトップを右クリック →「ウィジェットを編集」→「系统监视」を検索（ギャラリーでのウィジェット名）
 
 ```bash

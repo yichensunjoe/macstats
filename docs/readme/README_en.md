@@ -17,7 +17,7 @@ The repository and package are still MacStats; the display name briefly used Mac
 
 [Install](#install) · [What it shows](#what-it-shows) · [Two surfaces](#two-surfaces) · [Accuracy](#how-close-it-gets-to-activity-monitor) · [FAQ](#faq) · [Limitations](#known-limitations)
 
-**[Download MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · drag it into `/Applications`, then right-click → Open once
+**[Download MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · drag it into `/Applications`; on the first launch allow it in System Settings → “Open Anyway”
 
 </div>
 
@@ -30,10 +30,10 @@ The repository and package are still MacStats; the display name briefly used Mac
 > **The download is called MacStats; the installed app shows up as MacStats Panel.** The release file is `MacStats.zip` and it unpacks to `MacStats.app`; Finder, Launchpad and the menu bar show MacStats Panel. Same app, and the bundle ID is still `com.macstats.app`, so preferences and widgets you already added are unaffected.
 
 1. Unzip it and drag `MacStats.app` into `/Applications`
-2. Right-click MacStats Panel → **Open** and confirm once. The build is **signed but not notarized** (notarization needs a paid Developer ID certificate); see [install notes](../install.md) for why, and for the other ways to let it through
+2. The first launch is blocked (**signed but not notarized**): click “Done” in the dialog, then System Settings → Privacy & Security → **Open Anyway**; or clear the quarantine flag in a terminal. Why, and both paths, are in the [install notes](../install.md)
 3. The panel appears on the desktop. For the WidgetKit widget: right-click the desktop → Edit Widgets → search “系统监视” (the widget's name in the gallery)
 
-The approval applies to that one download. After re-downloading, overwriting or upgrading you may be asked again — right-click → Open, same as before.
+Approval is recorded per build: reinstalling the same build will not ask again, but **a new version asks once more**. “Right-click → Open” worked on macOS 14 and earlier; since macOS 15 the dialog has no Open button (verified on macOS 27: only “Done” and “Move to Trash”).
 
 Step 1 is not optional: the WidgetKit extension is only discovered from `/Applications`. In the Downloads folder or `~/Applications`, MacStats Panel never shows up in the widget gallery.
 
@@ -64,11 +64,11 @@ Clearing the quarantine attribute is the usual path for an open-source app that 
 
 **If it will not install**
 
-1. **Gatekeeper blocks it**: use one of the ways above (right-click → Open, or the quarantine command), or System Settings → Privacy & Security → Open Anyway. If macOS says the app is damaged, the download is usually incomplete — verify the sha256 and download again; if the checksum passes, try the quarantine command.
+1. **Gatekeeper blocks it**: use one of the ways above (System Settings → Privacy & Security → Open Anyway, or the quarantine command). If macOS says the app is damaged, the download is usually incomplete — verify the sha256 and download again; if the checksum passes, try the quarantine command.
 2. **Wrong architecture**: the release is Apple silicon (arm64) only; it does not run on Intel Macs and there is no Rosetta build. `uname -m` should print `arm64`.
 3. **macOS too old**: macOS 15 (Sequoia) or newer is required. Check with `sw_vers -productVersion`.
 4. **Widget does not show up**: confirm the app is in `/Applications` (not Downloads, not `~/Applications`) and has been launched at least once, then `killall chronod NotificationCenter` and open the app again. Only one copy should be registered per Mac.
-5. **Homebrew says untrusted tap**: Homebrew 5+ requires an explicit `brew trust yichensunjoe/macstats` before `brew install --cask macstats`; `brew untrust yichensunjoe/macstats` revokes it. Homebrew does not clear the quarantine flag, so the first launch may still need the right-click approval.
+5. **Homebrew says untrusted tap**: Homebrew 5+ requires an explicit `brew trust yichensunjoe/macstats` before `brew install --cask macstats`; `brew untrust yichensunjoe/macstats` revokes it. Homebrew does not clear the quarantine flag, so the first launch still needs the approval above.
 
 **Uninstall**
 

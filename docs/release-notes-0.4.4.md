@@ -21,8 +21,10 @@
 ### 仍然如此
 
 - 需要 macOS 15（Sequoia）+、Apple 芯片。
-- 本包**未公证**（Apple Development 签名）：首次启动需右键 App →「打开」，
+- 本包**未公证**（Apple Development 签名）。首次启动会被 Gatekeeper 拦下，弹窗只有
+  「完成」与「移到废纸篓」——点「完成」，到 **系统设置 → 隐私与安全性** 点「仍要打开」，
   或在终端执行 `xattr -dr com.apple.quarantine /Applications/MacStats.app`。
+  放行按构建记录，同一份包重装不会再问，换版本会再拦一次。
 - 系统小组件约 60 秒一跳，这是 WidgetKit 的调度上限。
 - 历史只在本机、只到分钟；没有云端同步，也没有秒级回放。
 - 面板仍在桌面图标层：全屏窗口盖住桌面时需要先露出桌面才能点到它，这是设计如此。

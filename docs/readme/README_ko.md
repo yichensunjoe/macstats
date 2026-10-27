@@ -15,7 +15,7 @@
 
 [설치](#설치) · [표시 항목](#표시-항목) · [두 가지 형태](#두-가지-형태) · [정확도](#활동-모니터와-얼마나-일치하는가) · [FAQ](#faq) · [알려진-제한](#알려진-제한)
 
-**[MacStats.zip 다운로드](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · `/Applications`로 드래그한 뒤 처음 한 번만 오른쪽 클릭 → '열기'
+**[MacStats.zip 다운로드](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)** · `/Applications`로 드래그한 뒤, 첫 실행은 시스템 설정 → '확인 없이 열기'로 허용
 
 </div>
 
@@ -26,7 +26,7 @@
 [**MacStats.zip 다운로드**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (약 2.5 MB, macOS 15+ / Apple 실리콘)
 
 1. 압축을 풀고 `MacStats.app`을 `/Applications`로 드래그
-2. MacStats를 오른쪽 클릭 → '열기'로 한 번 확인 (**공증되지 않음**; 이유와 터미널 대안은 [설치 안내](../install.md) 참고)
+2. 첫 실행은 차단됩니다(**공증되지 않음**). 경고에서 '완료'를 누른 뒤 시스템 설정 → 개인정보 보호 및 보안 → '확인 없이 열기'로 허용하거나, 터미널에서 격리 속성을 제거하세요. 이유와 두 방법은 [설치 안내](../install.md) 참고
 3. 데스크톱에 패널이 나타납니다. 시스템 위젯은 데스크톱을 오른쪽 클릭 → '위젯 편집' → '系统监视' 검색 (갤러리에 표시되는 위젯 이름)
 
 ```bash

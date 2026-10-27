@@ -22,6 +22,6 @@ brew uninstall --cask macstats
   `brew untrust yichensunjoe/macstats` 可撤回。
 - cask 指向 `releases/latest/download/MacStats.zip`，跟着最新 Release 走，
   所以用 `version :latest` + `sha256 :no_check`。
-- Homebrew 不会替你去掉 Gatekeeper 的隔离属性。首次启动仍可能被拦，
-  右键 →「打开」一次即可，详见 `docs/install.md`。
+- Homebrew 不会替你去掉 Gatekeeper 的隔离属性。首次启动仍会被拦：
+  到 系统设置 → 隐私与安全性 点「仍要打开」，或在终端 `xattr -dr com.apple.quarantine`，详见 `docs/install.md`。
 - 没有提交到 homebrew-cask 官方仓库：那边要求公证，当前签名做不到。

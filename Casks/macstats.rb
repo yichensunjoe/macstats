@@ -11,6 +11,8 @@ cask "macstats" do
 
   caveats <<~EOS
     MacStats is signed with an Apple Development certificate and is not notarized.
-    If macOS blocks the first launch, right-click the app in /Applications and choose Open.
+    If macOS blocks the first launch (the dialog only offers Done / Move to Trash),
+    allow it in System Settings > Privacy & Security > Open Anyway, or run:
+      xattr -dr com.apple.quarantine "/Applications/MacStats.app"
   EOS
 end
