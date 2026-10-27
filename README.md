@@ -2,9 +2,9 @@
 
 **简体中文** · [English](docs/readme/README_en.md) · [繁體中文](docs/readme/README_zh-TW.md) · [日本語](docs/readme/README_ja.md) · [한국어](docs/readme/README_ko.md) · [Deutsch](docs/readme/README_de.md) · [Español](docs/readme/README_es.md) · [Français](docs/readme/README_fr.md) · [Русский](docs/readme/README_ru.md) · [Português (Brasil)](docs/readme/README_pt-BR.md)
 
-# MacS
+# MacStats Panel
 
-原名 MacStats。
+仓库与包名仍是 MacStats；显示名曾短暂使用 MacS，查重后回退。
 
 ### 把「活动监视器」钉在桌面上的一块实时仪表。
 
@@ -27,15 +27,15 @@
 
 [**下载 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（约 2.5 MB，macOS 15+ / Apple 芯片）
 
-> **下载的包叫 MacStats，装好后显示名是 MacS。** Release 里的文件是 `MacStats.zip`，解压出来是 `MacStats.app`；Finder、启动台、菜单栏显示的是 MacS。同一个 App，Bundle ID 仍是 `com.macstats.app`，偏好与已添加的小组件都不受影响。
+> **下载的包叫 MacStats，装好后显示名是 MacStats Panel。** Release 里的文件是 `MacStats.zip`，解压出来是 `MacStats.app`；Finder、启动台、菜单栏显示的是 MacStats Panel。同一个 App，Bundle ID 仍是 `com.macstats.app`，偏好与已添加的小组件都不受影响。
 
 1. 解压，把 `MacStats.app` 拖进 `/Applications`
-2. 右键 MacS →「打开」，确认一次（**未公证**，原因与其它放行方式见[安装说明](docs/install.md)）
+2. 右键 MacStats Panel →「打开」，确认一次（**未公证**，原因与其它放行方式见[安装说明](docs/install.md)）
 3. 面板出现在桌面；想要系统小组件，右键桌面 →「编辑小组件」→ 搜「系统监视」
 
 放行只对这一次下载生效：重新下载、覆盖安装或升级后可能再被拦一次，照旧右键 →「打开」。
 
-第 1 步不能省：系统小组件只从 `/Applications` 发现扩展宿主，放在下载目录或 `~/Applications` 里，小组件库中不会出现 MacS。
+第 1 步不能省：系统小组件只从 `/Applications` 发现扩展宿主，放在下载目录或 `~/Applications` 里，小组件库中不会出现 MacStats Panel。
 
 **校验下载**（在下载目录里，两个文件同级）：
 

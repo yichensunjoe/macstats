@@ -382,7 +382,7 @@ struct WidgetView: View {
                 .fill(Theme.pressure(snapshot.memory.pressure))
                 .frame(width: 6, height: 6)
                 .shadow(color: Theme.pressure(snapshot.memory.pressure).opacity(0.9), radius: 3)
-            // 面板标题用 App 显示名（MacS）；.widgetTitle 是系统小组件库里的画廊名，两者不是一回事。
+            // 面板标题用 App 显示名（MacStats Panel）；.widgetTitle 是系统小组件库里的画廊名，两者不是一回事。
             Text(L10n.t(.appName))
                 .font(.system(size: 11.5, weight: .semibold))
                 .tracking(0.5)

@@ -6,7 +6,7 @@ let arguments = Array(CommandLine.arguments.dropFirst())
 
 if arguments.contains("--help") || arguments.contains("-h") {
     print("""
-    MacS (MacStats)
+    MacStats Panel (MacStats)
 
     用法:
       MacStats                      启动菜单栏应用与桌面小组件

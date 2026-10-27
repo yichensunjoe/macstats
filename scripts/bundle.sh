@@ -74,7 +74,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
   <key>CFBundleName</key><string>MacStats</string>
-  <key>CFBundleDisplayName</key><string>MacS</string>
+  <key>CFBundleDisplayName</key><string>MacStats Panel</string>
   <key>CFBundleIdentifier</key><string>com.macstats.app</string>
   <key>CFBundleExecutable</key><string>MacStats</string>
   <key>CFBundleIconFile</key><string>MacStats.icns</string>

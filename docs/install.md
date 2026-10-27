@@ -1,12 +1,12 @@
-# 安装 MacS
+# 安装 MacStats Panel
 
 ## 需要什么
 
 - macOS 15（Sequoia）或更新，Apple 芯片（arm64）
 - 一块想常驻在桌面上的空间
 
-> **下载的包叫 MacStats，装好后的显示名是 MacS。** Release 里的文件名是 `MacStats.zip`，
-> 解压出来是 `MacStats.app`；Finder、启动台、菜单栏显示的是 MacS。同一个 App，
+> **下载的包叫 MacStats，装好后的显示名是 MacStats Panel。** Release 里的文件名是 `MacStats.zip`，
+> 解压出来是 `MacStats.app`；Finder、启动台、菜单栏显示的是 MacStats Panel。同一个 App，
 > Bundle ID 仍是 `com.macstats.app`，所以偏好和已经添加的小组件都不受影响。
 
 ## 三步装好
@@ -14,13 +14,13 @@
 1. **下载** [MacStats.zip](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)
    （校验文件：同目录下的 `MacStats.zip.sha256`）
 2. 解压，把 `MacStats.app` **拖进 `/Applications`**
-3. 在应用程序里 **右键 MacS →「打开」**，确认一次「打开」
+3. 在应用程序里 **右键 MacStats Panel →「打开」**，确认一次「打开」
 
 面板会出现在桌面上，菜单栏同时出现 `CPU · 内存` 读数。放行只对这一次下载生效：
 重新下载、覆盖安装或升级后可能再被拦一次，照旧右键 →「打开」。
 
 > 第 2 步不能省：系统小组件（WidgetKit）只从 `/Applications` 发现扩展宿主，
-> 放在下载目录或 `~/Applications` 里，小组件库中不会出现 MacS。
+> 放在下载目录或 `~/Applications` 里，小组件库中不会出现 MacStats Panel。
 
 ## 校验下载
 
@@ -34,7 +34,7 @@ shasum -a 256 -c MacStats.zip.sha256
 
 ## 为什么第一次要右键打开
 
-MacS 用 **Apple Development** 证书签名，**没有做 Apple 公证**（公证需要付费的
+MacStats Panel 用 **Apple Development** 证书签名，**没有做 Apple 公证**（公证需要付费的
 Developer ID 证书）。从网络下载的包会被 Gatekeeper 拦下，提示「无法验证开发者」。
 
 三种放行方式，任选一种：

@@ -1,8 +1,8 @@
-# MacS · 安装问题模板
+# MacStats Panel · 安装问题模板
 # 维护：A6（docs/roadmap-v0.4/A-positioning-and-trust.md §6）
 # 必填项 2 个：卡在哪一步、是否试过右键/xattr
 name: 安装问题
-description: MacS 下载、解压、拖进 Applications 或首次打开时卡住了。
+description: MacStats Panel 下载、解压、拖进 Applications 或首次打开时卡住了。
 title: "[Install] "
 labels:
   - install
@@ -14,7 +14,7 @@ body:
 
         当前版本**未做 Apple 公证**，从网络下载后首次打开会被 Gatekeeper 拦下，这是预期行为：右键 App →「打开」确认一次即可，或在终端执行 `xattr -dr com.apple.quarantine /Applications/MacStats.app`。
 
-        下载下来的包叫 `MacStats.app`，装好后在 Finder / 启动台里显示的名字是 **MacS**。
+        下载下来的包叫 `MacStats.app`，装好后在 Finder / 启动台里显示的名字是 **MacStats Panel**。
 
   - type: dropdown
     id: stuck-step

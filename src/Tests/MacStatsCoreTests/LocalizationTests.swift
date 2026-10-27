@@ -251,22 +251,22 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(L10n.format(.historyPeakMemoryFormat, "1.50 GB"), "Memory 1.50 GB")
     }
 
-    /// ADR H2：对外显示名统一成 MacS，但小组件画廊名「系统监视」保持不变。
-    func testAppDisplayNameIsMacS() {
+    /// ADR H2（2026-10-27 修订）：显示名回退 MacStats Panel，小组件画廊名「系统监视」保持不变。
+    func testAppDisplayNameIsMacStatsPanel() {
         for lang in [ResolvedLanguage.zhHans, ResolvedLanguage.en] {
-            XCTAssertEqual(L10n.string(.appName, lang: lang), "MacS")
-            XCTAssertTrue(L10n.string(.menuAbout, lang: lang).contains("MacS"))
+            XCTAssertEqual(L10n.string(.appName, lang: lang), "MacStats Panel")
+            XCTAssertTrue(L10n.string(.menuAbout, lang: lang).contains("MacStats Panel"))
         }
 
         L10n.shared.setLanguage(.zhHans)
-        XCTAssertEqual(L10n.t(.appName), "MacS")
-        XCTAssertEqual(L10n.t(.menuAbout), "关于 MacS")
+        XCTAssertEqual(L10n.t(.appName), "MacStats Panel")
+        XCTAssertEqual(L10n.t(.menuAbout), "关于 MacStats Panel")
         // 小组件库里的名字不是应用名，保持「系统监视」。
         XCTAssertEqual(L10n.t(.widgetTitle), "系统监视")
 
         L10n.shared.setLanguage(.en)
-        XCTAssertEqual(L10n.t(.appName), "MacS")
-        XCTAssertEqual(L10n.t(.menuAbout), "About MacS")
+        XCTAssertEqual(L10n.t(.appName), "MacStats Panel")
+        XCTAssertEqual(L10n.t(.menuAbout), "About MacStats Panel")
         XCTAssertEqual(L10n.t(.widgetTitle), "System Stats")
     }
     // MARK: - B5 告警通知文案

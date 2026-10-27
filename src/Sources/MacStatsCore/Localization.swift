@@ -386,7 +386,7 @@ public final class L10n: @unchecked Sendable {
     // MARK: - 词库对照
 
     private static let stringsZh: [L10nKey: String] = [
-        .appName: "MacS",
+        .appName: "MacStats Panel",
         .widgetTitle: "系统监视",
         .settings: "设置",
 
@@ -501,7 +501,7 @@ public final class L10n: @unchecked Sendable {
         .scanningProcesses: "正在扫描进程…",
         .cleanupMatchHint: "按可执行名或 ps 显示的名字匹配，忽略大小写",
 
-        .aboutSection: "关于 MacStats",
+        .aboutSection: "关于 MacStats Panel",
         .appSubtitle: "系统级轻量化桌面监控小组件",
         .version: "版本",
         .buildArch: "运行架构",
@@ -574,7 +574,7 @@ public final class L10n: @unchecked Sendable {
         .menuClearWhitelist: "清空白名单",
         .menuOpenActivityMonitor: "打开活动监视器…",
         .menuSettings: "设置…",
-        .menuAbout: "关于 MacS",
+        .menuAbout: "关于 MacStats Panel",
         .menuQuit: "退出",
         .menuRefreshNow: "立即刷新",
         .menuSize: "尺寸",
@@ -629,7 +629,7 @@ public final class L10n: @unchecked Sendable {
     ]
 
     private static let stringsEn: [L10nKey: String] = [
-        .appName: "MacS",
+        .appName: "MacStats Panel",
         .widgetTitle: "System Stats",
         .settings: "Settings",
 
@@ -744,7 +744,7 @@ public final class L10n: @unchecked Sendable {
         .scanningProcesses: "Scanning processes…",
         .cleanupMatchHint: "Matches executable or ps process title (case-insensitive)",
 
-        .aboutSection: "About MacStats",
+        .aboutSection: "About MacStats Panel",
         .appSubtitle: "Lightweight macOS System Monitor Widget",
         .version: "Version",
         .buildArch: "Architecture",
@@ -817,7 +817,7 @@ public final class L10n: @unchecked Sendable {
         .menuClearWhitelist: "Clear Whitelist",
         .menuOpenActivityMonitor: "Open Activity Monitor…",
         .menuSettings: "Settings…",
-        .menuAbout: "About MacS",
+        .menuAbout: "About MacStats Panel",
         .menuQuit: "Quit",
         .menuRefreshNow: "Refresh Now",
         .menuSize: "Size",

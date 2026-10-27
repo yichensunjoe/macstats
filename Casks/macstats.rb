@@ -3,7 +3,7 @@ cask "macstats" do
   sha256 :no_check
 
   url "https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip"
-  name "MacS"
+  name "MacStats Panel"
   desc "Desktop panel for CPU, memory, GPU, energy, disk and network"
   homepage "https://github.com/yichensunjoe/macstats"
 

@@ -1,8 +1,8 @@
-# MacS · Bug 报告模板
+# MacStats Panel · Bug 报告模板
 # 维护：A6（docs/roadmap-v0.4/A-positioning-and-trust.md §6）
-# 必填项 5 个：macOS 版本、芯片、MacS 版本、发生了什么、是否公证安装
+# 必填项 5 个：macOS 版本、芯片、MacStats Panel 版本、发生了什么、是否公证安装
 name: Bug 报告
-description: MacS 的数字不对、崩溃、界面异常，或行为不符合预期。
+description: MacStats Panel 的数字不对、崩溃、界面异常，或行为不符合预期。
 title: "[Bug] "
 labels:
   - bug
@@ -39,7 +39,7 @@ body:
   - type: input
     id: macs-version
     attributes:
-      label: MacS 版本
+      label: MacStats Panel 版本
       description: 菜单栏图标 → 设置 → 通用里的版本号，或 Release 页面上的版本。
       placeholder: "0.3.1"
     validations:

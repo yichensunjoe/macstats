@@ -2,7 +2,7 @@
 
 [简体中文](../../README.md) · [English](README_en.md) · [繁體中文](README_zh-TW.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Deutsch](README_de.md) · [Español](README_es.md) · [Français](README_fr.md) · [Русский](README_ru.md) · **Português (Brasil)**
 
-# MacS
+# MacStats Panel
 
 ### O Monitor de Atividade, fixado na sua mesa.
 

@@ -2,9 +2,9 @@
 
 [简体中文](../../README.md) · **English** · [繁體中文](README_zh-TW.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Deutsch](README_de.md) · [Español](README_es.md) · [Français](README_fr.md) · [Русский](README_ru.md) · [Português (Brasil)](README_pt-BR.md)
 
-# MacS
+# MacStats Panel
 
-Formerly MacStats.
+The repository and package are still MacStats; the display name briefly used MacS before reverting.
 
 ### Activity Monitor, pinned to your desktop.
 
@@ -27,15 +27,15 @@ Formerly MacStats.
 
 [**Download MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip) (about 2.5 MB, macOS 15+ on Apple silicon)
 
-> **The download is called MacStats; the installed app shows up as MacS.** The release file is `MacStats.zip` and it unpacks to `MacStats.app`; Finder, Launchpad and the menu bar show MacS. Same app, and the bundle ID is still `com.macstats.app`, so preferences and widgets you already added are unaffected.
+> **The download is called MacStats; the installed app shows up as MacStats Panel.** The release file is `MacStats.zip` and it unpacks to `MacStats.app`; Finder, Launchpad and the menu bar show MacStats Panel. Same app, and the bundle ID is still `com.macstats.app`, so preferences and widgets you already added are unaffected.
 
 1. Unzip it and drag `MacStats.app` into `/Applications`
-2. Right-click MacS → **Open** and confirm once. The build is **signed but not notarized** (notarization needs a paid Developer ID certificate); see [install notes](../install.md) for why, and for the other ways to let it through
+2. Right-click MacStats Panel → **Open** and confirm once. The build is **signed but not notarized** (notarization needs a paid Developer ID certificate); see [install notes](../install.md) for why, and for the other ways to let it through
 3. The panel appears on the desktop. For the WidgetKit widget: right-click the desktop → Edit Widgets → search “系统监视” (the widget's name in the gallery)
 
 The approval applies to that one download. After re-downloading, overwriting or upgrading you may be asked again — right-click → Open, same as before.
 
-Step 1 is not optional: the WidgetKit extension is only discovered from `/Applications`. In the Downloads folder or `~/Applications`, MacS never shows up in the widget gallery.
+Step 1 is not optional: the WidgetKit extension is only discovered from `/Applications`. In the Downloads folder or `~/Applications`, MacStats Panel never shows up in the widget gallery.
 
 **Verify the download**
 
