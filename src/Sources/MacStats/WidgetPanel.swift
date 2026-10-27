@@ -28,12 +28,17 @@ final class WidgetPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
+    /// 背景拖动的入口。
+    ///
+    /// 面板内容整块是 SwiftUI 的 `NSHostingView`，而 `isMovableByWindowBackground` 的自动拖动
+    /// 在这条路径上不会生效（实测：纯 NSView 内容的面板能拖，同样配置的 SwiftUI 面板拖不动，
+    /// 桌面层与常规层都一样）。非交互区域里的 mouseDown 会冒泡到窗口，所以在这里自己发起拖动。
     override func mouseDown(with event: NSEvent) {
         if event.modifierFlags.contains(.control) {
             rightMouseDown(with: event)
             return
         }
-        super.mouseDown(with: event)
+        performDrag(with: event)
     }
 
     override func rightMouseDown(with event: NSEvent) {
