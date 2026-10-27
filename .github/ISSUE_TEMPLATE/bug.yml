@@ -41,7 +41,7 @@ body:
     attributes:
       label: MacStats Panel 版本
       description: 菜单栏图标 → 设置 → 通用里的版本号，或 Release 页面上的版本。
-      placeholder: "0.4.3"
+      placeholder: "0.4.4"
     validations:
       required: true
 
