@@ -12,7 +12,7 @@ The repository and package are still MacStats; the display name briefly used Mac
 
 [![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#install)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#how-it-works)
-[![tests](https://img.shields.io/badge/tests-175%20passing-3fb950?style=flat-square)](#commands)
+[![tests](https://img.shields.io/badge/tests-176%20passing-3fb950?style=flat-square)](#commands)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#how-it-works)
 
 [Install](#install) · [What it shows](#what-it-shows) · [Two surfaces](#two-surfaces) · [Accuracy](#how-close-it-gets-to-activity-monitor) · [FAQ](#faq) · [Limitations](#known-limitations)
@@ -262,7 +262,7 @@ src/Sources/MacStatsCore/    sampling, memory math, ring history, formatting (no
 src/Sources/MacStats/        SwiftUI panel, menu bar app, context menu, offscreen rendering
 src/Sources/MacStatsWidget/  WidgetKit extension: timeline provider + four view tiers
 src/Sources/MacStatsDiag/    diagnostic CLI (--json / --raw / --self-check)
-src/Tests/                   XCTest, 175 cases
+src/Tests/                   XCTest, 176 cases
 assets/MacStats.icns         app icon (copied into Contents/Resources when bundling)
 scripts/bundle.sh            release build, appex assembly, signing, install, registration
 docs/                        alignment notes, architecture, requirements, screenshots

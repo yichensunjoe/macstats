@@ -12,7 +12,7 @@
 
 [![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#下载安装)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#实现方式)
-[![tests](https://img.shields.io/badge/tests-175%20passing-3fb950?style=flat-square)](#命令)
+[![tests](https://img.shields.io/badge/tests-176%20passing-3fb950?style=flat-square)](#命令)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#实现方式)
 
 [下载安装](#下载安装) · [能看什么](#能看什么) · [两种形态](#两种形态) · [24 小时历史](#24-小时历史与持续高负载提醒) · [口径对齐](#和活动监视器对到什么程度) · [常见问题](#常见问题) · [限制](#已知限制)
@@ -263,7 +263,7 @@ src/Sources/MacStatsCore/    采样、内存换算、环形历史、格式化、
 src/Sources/MacStats/        SwiftUI 面板、菜单栏 App、右侧菜单、离屏渲染
 src/Sources/MacStatsWidget/  WidgetKit 扩展：时间线数据源 + 四档视图
 src/Sources/MacStatsDiag/    诊断 CLI（--json / --raw / --self-check）
-src/Tests/                   XCTest，175 项
+src/Tests/                   XCTest，176 项
 assets/MacStats.icns         应用图标（打包时拷进 Contents/Resources）
 scripts/bundle.sh            release 构建、组装 appex、签名、安装、注册
 docs/                        口径对照、架构、需求与界面截图

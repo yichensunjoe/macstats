@@ -10,7 +10,7 @@
 
 [![macOS](https://img.shields.io/badge/macOS-15%2B-1d1d1f?style=flat-square&logo=apple&logoColor=white)](#安裝)
 [![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](#實作方式)
-[![tests](https://img.shields.io/badge/tests-175%20passing-3fb950?style=flat-square)](#指令)
+[![tests](https://img.shields.io/badge/tests-176%20passing-3fb950?style=flat-square)](#指令)
 [![dependencies](https://img.shields.io/badge/dependencies-none-4c8eda?style=flat-square)](#實作方式)
 
 [安裝](#安裝) · [能看什麼](#能看什麼) · [兩種形態](#兩種形態) · [口徑對齊](#和活動監視器對到什麼程度) · [常見問題](#常見問題) · [限制](#已知限制)
@@ -167,7 +167,7 @@ src/Sources/MacStatsCore/    取樣、記憶體換算、環形歷史、格式化
 src/Sources/MacStats/        SwiftUI 面板、選單列 App、右鍵選單、離屏渲染
 src/Sources/MacStatsWidget/  WidgetKit 擴充：時間軸資料源 + 四段檢視
 src/Sources/MacStatsDiag/    診斷 CLI（--json / --raw / --self-check）
-src/Tests/                   XCTest，175 項
+src/Tests/                   XCTest，176 項
 scripts/bundle.sh            release 建置、組裝 appex、簽章、安裝、註冊
 docs/                        口徑對照、架構、需求與介面截圖
 ```
