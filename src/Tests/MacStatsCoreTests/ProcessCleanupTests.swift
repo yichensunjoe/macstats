@@ -165,8 +165,23 @@ final class ProcessCleanupTests: XCTestCase {
         let system = LiveProcess(pid: 4_322, name: "helper", path: "/System/Library/helper", startedAt: Date())
         let app = LiveProcess(pid: 4_323, name: "Safari", path: "/Applications/Safari.app/Contents/MacOS/Safari", startedAt: Date())
 
-        let names = cleaner.protectableNames(in: [young, system, app], foregroundPID: nil)
+        let names = cleaner.protectableNames(in: [young, system, app], foregroundPID: nil, titleProvider: { _ in nil })
         XCTAssertEqual(names, ["node"])
+    }
+
+    /// argv[0] 改名过的进程按改名显示（`ps` 里看到的就是它）。
+    /// 名字来源可注入，所以这条断言不读本机进程表。
+    func testProtectableNamesUsesInjectedTitle() {
+        let cleaner = ProcessCleaner()
+        let daemon = LiveProcess(
+            pid: 4_351, name: "node", path: "\(NSHomeDirectory())/bin/node", uid: currentUID,
+            startedAt: Date(), memoryBytes: 1_000
+        )
+        let names = cleaner.protectableNames(
+            in: [daemon], foregroundPID: nil, titleProvider: { _ in "cliguard-daemon" }
+        )
+        // 菜单版显示 argv[0] 本身（`ps` 里看到的就是它），不是清理列表里的「名字 · 改名」拼法。
+        XCTAssertEqual(names, ["cliguard-daemon"])
     }
 
     /// 已勾选的进程要带着对勾留在列表里，否则勾上就再也没法取消保护。
@@ -177,7 +192,7 @@ final class ProcessCleanupTests: XCTestCase {
             pid: 4_331, name: "node", path: "\(NSHomeDirectory())/bin/node", uid: currentUID,
             startedAt: Date(), memoryBytes: 1_000
         )
-        XCTAssertEqual(cleaner.protectableNames(in: [node], foregroundPID: nil), ["node"])
+        XCTAssertEqual(cleaner.protectableNames(in: [node], foregroundPID: nil, titleProvider: { _ in nil }), ["node"])
         XCTAssertTrue(cleaner.rules.isWhitelisted("node"))
     }
 

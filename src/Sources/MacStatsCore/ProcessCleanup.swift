@@ -636,7 +636,14 @@ public final class ProcessCleaner {
     }
 
     /// 只要名字的版本（菜单用），按内存降序去重。
-    func protectableNames(in processes: [LiveProcess], foregroundPID: Int32?) -> [String] {
+    ///
+    /// `titleProvider` 默认读本机真实进程的 argv[0]。传入列表若是构造出来的（单测），
+    /// 假 PID 可能恰好被某个真进程占用，读到的名字就张冠李戴，所以要能注入固定实现。
+    func protectableNames(
+        in processes: [LiveProcess],
+        foregroundPID: Int32?,
+        titleProvider: (Int32) -> String? = ProcessInventory.processTitle
+    ) -> [String] {
         let entries = protectableProcesses(in: processes, foregroundPID: foregroundPID)
             .map { (pid: $0.pid, name: $0.name, memory: $0.memoryBytes) }
 
@@ -644,7 +651,7 @@ public final class ProcessCleaner {
         var seen = Set<String>()
         var names: [String] = []
         for entry in entries.sorted(by: { $0.memory > $1.memory }) {
-            let title = ProcessInventory.processTitle(pid: entry.pid) ?? ""
+            let title = titleProvider(entry.pid) ?? ""
             let display = title.isEmpty || title == entry.name ? entry.name : title
             guard seen.insert(display).inserted else { continue }
             names.append(display)
