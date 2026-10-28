@@ -828,7 +828,7 @@ struct SettingsView: View {
                         Text(L10n.t(.appSubtitle))
                             .font(.system(size: 11))
                             .foregroundStyle(.secondary)
-                        Text("v\(model.version) · macOS 15+ (Apple Silicon & Intel)")
+                        Text("v\(model.version) · macOS 15+ (Apple Silicon)")
                             .font(.system(size: 10).monospacedDigit())
                             .foregroundStyle(.tertiary)
                     }
