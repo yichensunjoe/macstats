@@ -221,7 +221,7 @@ WidgetKit은 렌더 루프가 아니라 '예약된 스냅숏'입니다. 타임�
 <details>
 <summary><strong>Intel Mac도 지원하나요?</strong></summary>
 
-공개 API만 쓰므로 원칙적으로는 동작해야 하지만 실측은 arm64(macOS 26)에서만 했습니다. Intel에서는 CPU와 에너지 환산에 보정 데이터가 없습니다. 비교 결과와 함께 이슈를 남겨 주시면 도움이 됩니다.
+아니요. 배포 패키지는 Apple 실리콘(arm64) 전용이며, Intel 빌드도 Rosetta 경로도 없습니다. Intel Mac에서는 실행되지 않습니다.
 
 </details>
 

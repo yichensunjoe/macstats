@@ -319,7 +319,7 @@ No. No network requests, no telemetry, no accounts, and no user files are read. 
 <details>
 <summary><strong>Does it work on Intel Macs?</strong></summary>
 
-The code only uses public APIs and should be portable, but it has been tested on arm64 only (macOS 26). The CPU and energy conversions have no calibration data for Intel. Issues with your own comparison results are welcome.
+No. The release is Apple silicon (arm64) only: there is no Intel build and no Rosetta path, so it does not run on Intel Macs.
 
 </details>
 

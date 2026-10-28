@@ -221,7 +221,7 @@ Nein. Keine Netzwerkanfragen, keine Telemetrie, keine Konten, keine Benutzerdate
 <details>
 <summary><strong>Läuft es auf Intel-Macs?</strong></summary>
 
-Der Code nutzt nur öffentliche APIs und sollte portabel sein, getestet wurde er aber nur auf arm64 (macOS 26). Für die CPU- und Energieumrechnung gibt es auf Intel keine Kalibrierdaten. Issues mit eigenen Vergleichswerten sind willkommen.
+Nein. Das Release gibt es nur für Apple Silicon (arm64): kein Intel-Build, kein Rosetta-Weg – auf Intel-Macs läuft es nicht.
 
 </details>
 

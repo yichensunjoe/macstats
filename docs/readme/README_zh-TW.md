@@ -221,7 +221,7 @@ WidgetKit 不是渲染迴圈，而是「定時快照」：時間軸提供一筆�
 <details>
 <summary><strong>支援 Intel Mac 嗎？</strong></summary>
 
-程式只用公開介面，理論上是通用的，但只在 arm64 + macOS 26 上實測過；Intel 上 CPU 與能耗的換算沒有校準資料。歡迎帶著對照結果提 issue。
+不支援。發行包只有 Apple 晶片（arm64）版本，沒有 Intel 組建，也不走 Rosetta；Intel Mac 上無法執行。
 
 </details>
 

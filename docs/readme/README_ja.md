@@ -221,7 +221,7 @@ WidgetKit は描画ループではなく「定時スナップショット」で�
 <details>
 <summary><strong>Intel Mac でも動きますか？</strong></summary>
 
-公開 API しか使っていないので原理的には動くはずですが、実測は arm64（macOS 26）のみです。Intel では CPU と電力の換算にキャリブレーションデータがありません。比較結果を添えて issue を立ててもらえれば助かります。
+いいえ。配布パッケージは Apple シリコン（arm64）のみで、Intel 版のビルドも Rosetta での実行経路もありません。Intel Mac では動作しません。
 
 </details>
 

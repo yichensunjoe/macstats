@@ -221,7 +221,7 @@ No. Sin peticiones de red, sin telemetría, sin cuentas y sin leer archivos del 
 <details>
 <summary><strong>¿Funciona en Macs Intel?</strong></summary>
 
-El código solo usa API públicas y debería ser portable, pero solo se ha probado en arm64 (macOS 26). Las conversiones de CPU y energía no tienen datos de calibración para Intel. Los issues con tus propias comparaciones son bienvenidos.
+No. La versión publicada es solo para Apple Silicon (arm64): no hay compilación para Intel ni ruta Rosetta, así que no funciona en Macs Intel.
 
 </details>
 

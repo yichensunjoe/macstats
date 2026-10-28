@@ -320,7 +320,7 @@ WidgetKit 不是渲染循环，是「定时快照」：时间线给一条数据�
 <details>
 <summary><strong>支持 Intel Mac 吗？</strong></summary>
 
-代码只用公开接口，理论上是通用的，但只在 arm64 + macOS 26 上实测过；Intel 上 CPU 与能耗的换算没有校准数据。欢迎带着对照结果提 issue。
+不支持。发行包只有 Apple 芯片（arm64）版本，没有 Intel 构建，也不走 Rosetta；Intel Mac 上无法运行。
 
 </details>
 
