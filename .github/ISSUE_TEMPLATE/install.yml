@@ -18,6 +18,8 @@ body:
 
         下载下来的包叫 `MacStats.app`，装好后在 Finder / 启动台里显示的名字是 **MacStats Panel**。
 
+        升级后小组件还停在旧版本时，先在终端强制重新注册扩展（`lsregister` + `pluginkit`，命令见 install.md 的「装不上时先看这里」第 5 条）。
+
   - type: dropdown
     id: stuck-step
     attributes:
@@ -29,6 +31,7 @@ body:
         - 拖进 Applications（拖不进去 / 提示已存在）
         - 首次打开被拦（Gatekeeper 提示无法验证开发者）
         - 小组件不出现（小组件库里搜不到）
+        - 升级后小组件还是旧版本（版本号没变 / 小组件没刷新）
         - 其他
     validations:
       required: true

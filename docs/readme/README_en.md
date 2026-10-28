@@ -68,7 +68,8 @@ Clearing the quarantine attribute is the usual path for an open-source app that 
 2. **Wrong architecture**: the release is Apple silicon (arm64) only; it does not run on Intel Macs and there is no Rosetta build. `uname -m` should print `arm64`.
 3. **macOS too old**: macOS 15 (Sequoia) or newer is required. Check with `sw_vers -productVersion`.
 4. **Widget does not show up**: confirm the app is in `/Applications` (not Downloads, not `~/Applications`) and has been launched at least once, then `killall chronod NotificationCenter` and open the app again. Only one copy should be registered per Mac.
-5. **Homebrew says untrusted tap**: Homebrew 5+ requires an explicit `brew trust yichensunjoe/macstats` before `brew install --cask macstats`; `brew untrust yichensunjoe/macstats` revokes it. Homebrew does not clear the quarantine flag, so the first launch still needs the approval above.
+5. **Widget still shows the old version after an upgrade**: overwriting `MacStats.app` in `/Applications` does not refresh the extension registration, so the old build can keep loading. Quit and reopen the app once; if that is not enough, re-register the extension by force (the `lsregister` + `pluginkit` commands are in the [install notes](../install.md)). If the reported version is the new one but the widget still looks old, remove it from the widget gallery and add it again.
+6. **Homebrew says untrusted tap**: Homebrew 5+ requires an explicit `brew trust yichensunjoe/macstats` before `brew install --cask macstats`; `brew untrust yichensunjoe/macstats` revokes it. Homebrew does not clear the quarantine flag, so the first launch still needs the approval above.
 
 **Uninstall**
 

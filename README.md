@@ -64,7 +64,8 @@ brew install --cask macstats
 2. **架构不对**：只提供 Apple 芯片（arm64）包，Intel Mac 无法运行，也没有 Rosetta 版本。`uname -m` 应输出 `arm64`。
 3. **系统版本太低**：需要 macOS 15（Sequoia）或更新，`sw_vers -productVersion` 确认。
 4. **系统小组件不出现**：确认 App 在 `/Applications`（不是下载目录或 `~/Applications`）、至少启动过一次，然后 `killall chronod NotificationCenter`，再打开一次 App；一台机器只应注册一份。
-5. **Homebrew 报 untrusted tap**：Homebrew 5 起第三方 tap 必须先 `brew trust yichensunjoe/macstats` 再 `brew install --cask macstats`；`brew untrust yichensunjoe/macstats` 可撤回。Homebrew 不会替你清隔离属性，首次启动仍需按上面放行。
+5. **升级后小组件还停在旧版本**：把新包覆盖进 `/Applications` 不会自动刷新扩展注册，系统可能继续按旧构建记录加载。先退出并重开一次 App；仍然如此就强制重新注册扩展（`lsregister` + `pluginkit`，命令见[安装说明的同一节](docs/install.md#装不上时先看这里)）。版本号已是新的、桌面上还是旧样子，就从「编辑小组件」里移除再添加一次。
+6. **Homebrew 报 untrusted tap**：Homebrew 5 起第三方 tap 必须先 `brew trust yichensunjoe/macstats` 再 `brew install --cask macstats`；`brew untrust yichensunjoe/macstats` 可撤回。Homebrew 不会替你清隔离属性，首次启动仍需按上面放行。
 
 **卸载**：先退出 App（菜单栏图标 → 退出），再 `rm -rf /Applications/MacStats.app`；Homebrew 装的用 `brew uninstall --cask macstats`。偏好与快照留在 `~/Library/Application Support/MacStats/` 和 `~/Library/Preferences/com.macstats.app.plist`，需要彻底清掉时一并删除。
 
