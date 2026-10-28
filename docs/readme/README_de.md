@@ -104,6 +104,46 @@ Beim ersten Start erscheint in der Menüleiste ein kleiner `CPU · Speicher`-Wer
   <img src="../widget-small.png" alt="Kleines Widget: große CPU-Zahl mit Kurve" width="280" />
 </p>
 
+## 24-Stunden-Verlauf und Alarm bei Dauerlast
+
+Standard- und erweiterte Panels haben eine Zeile „Letzte 24 Stunden“: Kurven für CPU, Arbeitsspeicher und GPU, jeweils mit ihrem 24-Stunden-Peak. Der Peak ist anklickbar: Er öffnet Zeitpunkt und Wert sowie **die drei CPU-intensivsten Prozesse genau in diesem Moment** (Name, CPU-%, Arbeitsspeicher, jeweils mit einer kurzen Erklärung in Alltagssprache). Die Abtastung bleibt bei einmal pro Sekunde; die Punkte werden minutengemittelt und als JSONL unter `~/Library/Application Support/MacStats/history/` geschrieben — jeder Minutenpunkt hält zusätzlich die drei damals aktivsten Prozesse fest, etwa 0,4 MB pro Tag, standardmäßig 30 Tage lang. Unter Einstellungen → Monitoring lassen sich 7 / 30 / 90 Tage wählen oder die Daten löschen.
+
+Zwei ehrliche Grenzen: **GPU-Peaks listen keine Prozesse** (die aktuelle Abtastung liefert keine verlässliche GPU-Nutzung pro Prozess), und **vor dieser Version geschriebener Verlauf enthält keine Prozessdaten** — ein Klick darauf meldet „Keine Prozesse aufgezeichnet“, statt die heutige Prozessliste einzusetzen.
+
+„Alarm bei Dauerlast“ ist standardmäßig aus. Aktiviert muss CPU ≥ 90 %, Arbeitsspeicher ≥ 85 % oder Festplatte ≥ 90 % über **drei aufeinanderfolgende Abtastungen** anhalten, bevor eine Mitteilung erscheint; jede Kennzahl wiederholt sich höchstens alle zehn Minuten — ein einzelner Ausschlag unterbricht Sie nie. Der Text nennt den verantwortlichen Prozess: Das CPU-Ereignis nimmt den CPU-Spitzenreiter, das Speicher-Ereignis den Speicher-Spitzenreiter (getrennt gereiht); Festplatten-Ereignisse haben keine Prozesszuordnung und nennen nur den Wert.
+
+## Ungenutzte Hintergrundprozesse mit einem Klick bereinigen
+
+Menüleiste (oder Panel) → „Ungenutzte Hintergrundprozesse bereinigen …“. Angesprochen werden nur **zurückgebliebene Waisen**: von Ihnen gestartet, Elternteil bereits beendet, kein steuerndes Terminal, keine Kinder, keine Sockets und zehn Minuten ohne CPU-Aktivität. Sie sehen zuerst die Liste und den gemeldeten Speicherbedarf dieser Prozesse (nicht die Menge, die macOS tatsächlich zurückgewinnt); erst nach Ihrer Bestätigung wird `SIGTERM` gesendet, und was nach drei Sekunden noch läuft, bleibt unangetastet — ein `SIGKILL` folgt nie.
+
+Immer unberührt: Systemprozesse (`/System`, `/usr`, `/Library`, …), Apps samt Helfern (`.app/` im Pfad), an ein tty gebundene Befehle, die App im Vordergrund, Kinder eines lebenden Elternteils, alles mit einem TCP/UDP/Unix-Socket, die eigenen Kinder des Prozesses und Namen auf Ihrer Whitelist (Menü → „Bereinigungs-Whitelist“, geprüft gegen Executable-Name und `argv[0]`). Angehakte Namen bleiben mit ✓ im Untermenü und lassen sich dort wieder abwählen; „Whitelist leeren“ setzt die Liste zurück.
+
+### Jeder Prozess bekommt eine verständliche Erklärung
+
+Der Bestätigungsdialog nennt zu jedem Prozess, was er ist und was das Beenden bewirkt — zum Beispiel `npm run dev`: „lokaler Entwicklungsserver; beendet man ihn, ist die lokale Seite weg und Hot Reload stoppt“, oder `github-mcp-server`: „gibt KI-Assistenten zusätzliche Werkzeuge; beendet man ihn, fehlt eines, bis die App neu geöffnet wird“. Unbekannte Prozesse sagen das ehrlich („ein Hintergrundbefehl namens X, kein Fenster, kein Symbol“), statt zu raten. Die Texte stehen in `ProcessGlossary.swift`, einer reinen Funktion, die über `argv[0]` → Executable-Name → Installationspfad zuordnet.
+
+Auf einem ausgelasteten Rechner meldet es oft, es gebe nichts zu bereinigen. Das ist das Design, kein Fehler: Gefunden werden vor allem verwaiste `node`-, `python`- und Skriptprozesse nach einem Absturz. Zombies (Zustand `Z`) fallen nicht darunter — sie sind bereits beendet, und nur der Elternteil kann sie einsammeln.
+
+Nur-Lese-Prüfung (beendet nichts):
+
+```bash
+cd src && .build/debug/macstatsDiag --cleanup-dry-run
+```
+
+## Einstellungen-Fenster
+
+Menüleiste → „Einstellungen …“ (oder ⌘,) öffnet ein Standardfenster mit fünf Tabs:
+
+| Tab | Inhalt |
+|---|---|
+| Allgemein | Sprache (Systemeinstellung / 简体中文 / English), Anzeige in der Menüleiste, Start bei der Anmeldung, beim Start ausgeblendet, Ton und Mitteilung beim Bereinigen, Warnung bei Speicherdruck |
+| Darstellung & Panel | Erscheinungsbild (System / Dunkel / Hell), Akzent (kräftig / einfarbig), Desktop-Widget anzeigen, Panelform (Streifen / kompakt / Standard / detailliert), immer im Vordergrund, Klick durchreichen |
+| Monitoring | Aktualisierungsintervall, Glättungsfenster (1 / 3 / 5 s), Anzahl der Top-Prozesse (3 / 5 / 8), Verlaufsaufzeichnung mit 7 / 30 / 90 Tagen und Löschen, Alarm bei Dauerlast |
+| Prozessbereinigung | Leerlauf- und Speicherschwelle, durchsuchbare Prozessliste mit Erklärung, Häkchen zum Schützen, manuelle Namenseingabe, Aktualisieren und Leeren |
+| Über | Version, Build-Architektur, Datenquelle, Genauigkeitsaussage, Aktivitätsanzeige öffnen, Diagnose ausführen |
+
+Das Kontextmenü behält nur die Alltagsaktionen: ein-/ausblenden, aus-/einklappen, Widget hinzufügen, bereinigen, Whitelist, Aktivitätsanzeige, Einstellungen, beenden.
+
 ## Zwei Oberflächen
 
 Eine Erfassungsschicht, zwei Wirte:

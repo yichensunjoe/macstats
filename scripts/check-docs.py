@@ -10,7 +10,9 @@
     3. 测试数：徽章 tests-N passing 与正文 XCTest，N 项/cases 必须等于 _meta.json 的 test_count；
     4. zip 大小：2.4 MB（±0.05 MB，按 10^6 字节）与 2,439,821 字节两种写法必须与 zip_bytes 一致；
     5. 本地相对链接必须存在；页内锚点必须能在目标 Markdown 找到对应标题（GitHub slug 规则）；
-    6. 外链 HTTP 默认不检查，--external 时才探测（网络错误只告警，HTTP 4xx/5xx 记为错误）。
+    6. 外链 HTTP 默认不检查，--external 时才探测（网络错误只告警，HTTP 4xx/5xx 记为错误）；
+    7. README 结构对齐：10 份 README 的 H2/H3 数量必须与 README.md 一致；安装章必须是三步、
+       同一组命令，并带齐六条排障及其关键技术声明（arm64/Rosetta、killall、pluginkit、brew trust）。
 
 输出：
     file:line: expected ... got ...；有错退出码 1，全过 0；末尾打印汇总。
@@ -57,6 +59,36 @@ HTML_ATTR_RE = re.compile(
 )
 HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$")
 INLINE_CODE_RE = re.compile(r"\x60[^\x60\n]*\x60")
+NUMBERED_ITEM_RE = re.compile(r"^\s*(\d+)\.\s+")
+BOLD_ITEM_RE = re.compile(r"^\s*(\d+)\.\s+\*\*")
+
+# 10 份 README 的安装章骨架：三步安装、同一组命令、六条排障。
+# 共享骨架与具体语言无关，所以按命令与数字校验，而不比对译文。
+INSTALL_STEP_COUNT = 3
+TROUBLESHOOTING_ITEM_COUNT = 6
+INSTALL_REQUIRED_TOKENS = (
+    "MacStats.zip",
+    "/Applications",
+    "xattr -dr com.apple.quarantine",
+    "brew install --cask macstats",
+    "brew trust yichensunjoe/macstats",
+    "shasum -a 256 -c",
+    "uname -m",
+    "sw_vers -productVersion",
+    "killall chronod NotificationCenter",
+    "lsregister",
+    "pluginkit",
+    "arm64",
+    "Rosetta",
+    "macOS 15",
+)
+TROUBLESHOOTING_ITEM_TOKENS = {
+    1: ("Gatekeeper",),
+    2: ("arm64", "Rosetta"),
+    4: ("killall chronod NotificationCenter",),
+    5: ("lsregister", "pluginkit"),
+    6: ("brew trust", "brew untrust"),
+}
 
 
 @dataclass
@@ -126,6 +158,7 @@ class DocChecker:
         self.issues = []
         self.fixes = []
         self.slug_cache = {}
+        self.heading_cache = {}
         self.stats = {
             "files": 0,
             "local_links": 0,
@@ -155,6 +188,7 @@ class DocChecker:
     def run(self):
         for path in self.doc_paths():
             self.check_file(path)
+        self.check_readme_structure()
 
     # ---- 单文件检查 -------------------------------------------------
     def check_file(self, path):
@@ -358,6 +392,138 @@ class DocChecker:
         if status is not None and status >= 400:
             self.add(path, line_no, "expected external link " + url + " to return 2xx/3xx, got HTTP " + str(status))
 
+    # ---- README 结构对齐 -------------------------------------------
+    def readme_paths(self):
+        return [self.root / "README.md"] + sorted((self.root / "docs/readme").glob("README_*.md"))
+
+    def iter_headings(self, path):
+        cached = self.heading_cache.get(path)
+        if cached is not None:
+            return cached
+        cached = []
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            self.heading_cache[path] = cached
+            return cached
+        in_fence = False
+        for line_no, line in enumerate(text.splitlines(), 1):
+            stripped = line.lstrip()
+            if stripped.startswith(FENCE) or stripped.startswith("~~~"):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
+            match = HEADING_RE.match(line)
+            if match:
+                cached.append((line_no, len(match.group(1)), match.group(2)))
+        self.heading_cache[path] = cached
+        return cached
+
+    def check_readme_structure(self):
+        """README 结构对齐：标题数量与安装章骨架必须 10 份一致。"""
+        paths = self.readme_paths()
+        reference = paths[0]
+        counts = {}
+        for path in paths:
+            headings = self.iter_headings(path)
+            counts[path] = {
+                2: sum(1 for _, level, _ in headings if level == 2),
+                3: sum(1 for _, level, _ in headings if level == 3),
+            }
+        if reference not in counts:
+            return
+        for level, label in ((2, "H2"), (3, "H3")):
+            expected = counts[reference][level]
+            for path in paths[1:]:
+                got = counts[path][level]
+                if got == expected:
+                    continue
+                headings = self.iter_headings(path)
+                line = next((line for line, lvl, _ in headings if lvl == level), 1)
+                self.add(
+                    path,
+                    line,
+                    "expected {} {} sections ({}, translated READMEs must match), got {}".format(
+                        expected, label, rel_path(self.root, reference), got
+                    ),
+                )
+        for path in paths:
+            self.check_install_chapter(path)
+
+    def check_install_chapter(self, path):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            return
+        headings = self.iter_headings(path)
+        start = next((line for line, level, _ in headings if level == 2), None)
+        if start is None:
+            self.add(path, 1, "expected an install chapter (first H2), got none")
+            return
+        end = next((line for line, level, _ in headings if level == 2 and line > start), len(lines) + 1)
+        chapter = lines[start - 1:end - 1]
+        chapter_first_line = start
+
+        steps = []
+        in_fence = False
+        for line in chapter:
+            stripped = line.lstrip()
+            if stripped.startswith(FENCE) or stripped.startswith("~~~"):
+                in_fence = not in_fence
+                break  # 安装步骤在第一个代码块之前
+            match = NUMBERED_ITEM_RE.match(line)
+            if match:
+                steps.append(int(match.group(1)))
+        if steps != list(range(1, INSTALL_STEP_COUNT + 1)):
+            self.add(
+                path,
+                chapter_first_line,
+                "expected install steps 1-{} before the command block, got {}".format(
+                    INSTALL_STEP_COUNT, steps or "none"
+                ),
+            )
+
+        item_lines = {}
+        in_fence = False
+        for offset, line in enumerate(chapter, start):
+            stripped = line.lstrip()
+            if stripped.startswith(FENCE) or stripped.startswith("~~~"):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
+            match = BOLD_ITEM_RE.match(line)
+            if match:
+                item_lines.setdefault(int(match.group(1)), (offset, line))
+        if sorted(item_lines) != list(range(1, TROUBLESHOOTING_ITEM_COUNT + 1)):
+            self.add(
+                path,
+                chapter_first_line,
+                "expected {} troubleshooting items numbered 1-{}, got {}".format(
+                    TROUBLESHOOTING_ITEM_COUNT,
+                    TROUBLESHOOTING_ITEM_COUNT,
+                    sorted(item_lines) or "none",
+                ),
+            )
+
+        joined = "\n".join(chapter)
+        for token in INSTALL_REQUIRED_TOKENS:
+            if token not in joined:
+                self.add(path, chapter_first_line, "expected install chapter to mention " + token + ", got missing")
+        for number, tokens in TROUBLESHOOTING_ITEM_TOKENS.items():
+            entry = item_lines.get(number)
+            if entry is None:
+                continue
+            line_no, text = entry
+            for token in tokens:
+                if token not in text:
+                    self.add(
+                        path,
+                        line_no,
+                        "expected troubleshooting item {} to mention {}, got missing".format(number, token),
+                    )
+
     # ---- 输出 -------------------------------------------------------
     def report(self):
         ordered = sorted(self.issues, key=lambda item: (rel_path(self.root, item.path), item.line, item.message))
@@ -470,7 +636,8 @@ def build_parser():
             "  3. 测试数徽章与正文 XCTest 行必须等于 docs/_meta.json 的 test_count；\n"
             "  4. zip 大小 2.4 MB（±0.05 MB，按 10^6 字节）或 2,439,821 字节必须与 zip_bytes 一致；\n"
             "  5. 本地相对链接必须存在，页内锚点必须能在目标 Markdown 找到对应标题；\n"
-            "  6. 外链默认不检查，--external 时才发 HTTP 请求（网络错误仅告警）。\n"
+            "  6. 外链默认不检查，--external 时才发 HTTP 请求（网络错误仅告警）；\n"
+            "  7. 10 份 README 的 H2/H3 数量一致，安装章为三步 + 六条排障（含固定命令）。\n"
             "\n"
             "退出码：0 全过；1 有错误；2 用法错误。\n"
         ),

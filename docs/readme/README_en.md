@@ -180,13 +180,15 @@ cd src && .build/debug/macstatsDiag --cleanup-dry-run
 
 ## Settings window
 
-The menu bar → "Settings…" (or ⌘,) opens a standard settings window with three tabs:
+The menu bar → "Settings…" (or ⌘,) opens a standard settings window with five tabs:
 
 | Tab | Contents |
 |---|---|
-| Display | Show desktop widget, panel shape (strip / standard), always on top, click-through, refresh interval |
-| Cleanup | Your background processes, each with a plain-language description; tick to protect, untick to release; searchable, with manual name entry, refresh and clear |
-| General | Launch at login, version |
+| General | Language (follow system / 简体中文 / English), menu bar readout, launch at login, start hidden, cleanup sound and notification, memory pressure alert |
+| Appearance & Panel | Theme (system / dark / light), accent (vibrant / monochrome), show desktop widget, panel style (strip / compact / standard / detailed), always on top, click-through |
+| Monitoring | Refresh interval, smoothing window (1 / 3 / 5 s), number of top processes (3 / 5 / 8), history recording with 7 / 30 / 90-day retention and one-click clear, sustained-load alerts |
+| Process Cleanup | Idle and memory thresholds, searchable process list with plain-language descriptions, tick to protect, manual name entry, refresh and clear |
+| About | Version, build architecture, data source, alignment statement, open Activity Monitor, run diagnostics |
 
 The right-click menu keeps the everyday actions only: show/hide, expand/collapse, add widget, clean up, whitelist, Activity Monitor, settings, quit.
 

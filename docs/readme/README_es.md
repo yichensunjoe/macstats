@@ -104,6 +104,46 @@ Al abrirlo por primera vez aparece una pequeña lectura `CPU · Memoria` en la b
   <img src="../widget-small.png" alt="Widget pequeño: cifra grande de CPU con curva" width="280" />
 </p>
 
+## Historial de 24 horas y avisos de carga sostenida
+
+Los paneles estándar y ampliado incluyen una fila «Últimas 24 horas»: curvas de CPU, memoria y GPU, cada una con su pico de 24 horas. El pico es clicable: abre la hora y el valor de ese pico y **los tres procesos que más CPU usaban en ese momento** (nombre, CPU %, memoria, cada uno con una frase en lenguaje llano). El muestreo sigue siendo una vez por segundo; los puntos se promedian por minuto y se escriben como JSONL en `~/Library/Application Support/MacStats/history/`: cada punto de minuto guarda además los tres procesos más activos de ese momento, unos 0,4 MB al día, conservados 30 días por defecto. En Ajustes → Monitorización se cambia a 7 / 30 / 90 días o se borra todo.
+
+Dos límites honestos: **los picos de GPU no listan procesos** (el muestreo actual no obtiene un uso de GPU fiable por proceso), y **el historial escrito antes de esta versión no tiene registros de procesos**: al hacer clic dice «No se registraron procesos entonces» en vez de sustituirlos por la lista actual.
+
+«Avisos de carga sostenida» está desactivado por defecto. Al activarlo, CPU ≥ 90 %, memoria ≥ 85 % o disco ≥ 90 % deben mantenerse durante **tres muestras consecutivas** para que llegue una notificación, y cada métrica se repite como mucho cada diez minutos: un pico aislado nunca te interrumpe. El texto nombra el proceso responsable: el evento de CPU toma el primer proceso por CPU y el de memoria el primero por memoria (se ordenan por separado); los eventos de disco no tienen atribución de proceso y solo indican el valor.
+
+## Limpieza en un clic de procesos en segundo plano inactivos
+
+Barra de menús (o panel) → «Limpiar procesos en segundo plano inactivos…». Solo busca **huérfanos abandonados**: iniciados por ti, con el proceso padre ya terminado, sin terminal de control, sin hijos, sin sockets y sin actividad de CPU durante 10 minutos. Primero ves la lista y la huella declarada de esos procesos (no lo que macOS recuperará realmente); solo tras confirmar se envía `SIGTERM`, y lo que siga vivo a los 3 segundos se deja en paz: nunca se escala a `SIGKILL`.
+
+Nunca se tocan: procesos del sistema (`/System`, `/usr`, `/Library`, …), apps y sus ayudantes (`.app/` en la ruta), comandos asociados a un tty, la app en primer plano, hijos de un padre vivo, cualquier cosa con un socket TCP/UDP/Unix, los hijos del propio proceso y los nombres de tu lista blanca (menú → «Lista blanca de limpieza», comparada con el nombre del ejecutable y `argv[0]`). Los nombres marcados siguen en ese submenú con ✓ para poder desmarcarlos; «Vaciar lista blanca» la reinicia.
+
+### Cada proceso lleva una explicación en lenguaje llano
+
+El diálogo de confirmación indica, para cada proceso, qué es y qué pasa al terminarlo; por ejemplo, `npm run dev` «servidor de desarrollo local; si lo terminas, la página local deja de abrirse y se detiene la recarga en caliente», o `github-mcp-server` «da herramientas extra a los asistentes de IA; si lo terminas, falta una hasta que reabras esa app». Los procesos desconocidos lo dicen con honestidad («un comando en segundo plano llamado X, sin ventana ni icono») en lugar de adivinar. Los textos están en `ProcessGlossary.swift`, una función pura que empareja por `argv[0]` → nombre del ejecutable → ruta de instalación.
+
+En un equipo ocupado a menudo informa de que no hay nada que limpiar. Eso es el diseño funcionando, no un fallo: lo que sí encuentra son procesos `node`, `python` o de script huérfanos tras un cierre inesperado. Los zombis (estado `Z`) quedan fuera: ya terminaron y solo su padre puede recogerlos.
+
+Comprobación de solo lectura (no termina nada):
+
+```bash
+cd src && .build/debug/macstatsDiag --cleanup-dry-run
+```
+
+## Ventana de Ajustes
+
+Barra de menús → «Ajustes…» (o ⌘,) abre una ventana de ajustes estándar con cinco pestañas:
+
+| Pestaña | Contenido |
+|---|---|
+| General | Idioma (seguir el sistema / 简体中文 / English), lectura en la barra de menús, abrir al iniciar sesión, ocultar al arrancar, sonido y notificación de limpieza, aviso de presión de memoria |
+| Apariencia y panel | Tema (sistema / oscuro / claro), acento (vivo / monocromo), mostrar widget de escritorio, forma del panel (franja / compacto / estándar / detallado), siempre encima, clic a través |
+| Monitorización | Intervalo de actualización, ventana de suavizado (1 / 3 / 5 s), número de procesos principales (3 / 5 / 8), historial con retención de 7 / 30 / 90 días y borrado, avisos de carga sostenida |
+| Limpieza | Umbrales de inactividad y memoria, lista de procesos buscable con explicaciones, marca para proteger, alta manual de nombres, actualizar y vaciar |
+| Acerca de | Versión, arquitectura de compilación, fuente de datos, declaración de precisión, abrir Monitor de Actividad, ejecutar diagnóstico |
+
+El menú contextual conserva solo las acciones del día a día: mostrar/ocultar, expandir/contraer, añadir widget, limpiar, lista blanca, Monitor de Actividad, ajustes, salir.
+
 ## Dos superficies
 
 Una capa de muestreo, dos anfitriones:

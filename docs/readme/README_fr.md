@@ -104,6 +104,46 @@ Au premier lancement, une petite valeur `CPU · Mémoire` apparaît dans la barr
   <img src="../widget-small.png" alt="Petit widget : grand chiffre CPU avec courbe" width="280" />
 </p>
 
+## Historique sur 24 heures et alertes de charge prolongée
+
+Les panneaux standard et détaillé comportent une ligne « Dernières 24 heures » : courbes du CPU, de la mémoire et du GPU, chacune avec son pic sur 24 heures. Le pic est cliquable : il ouvre l'heure et la valeur de ce pic, ainsi que **les trois processus les plus gourmands en CPU à cet instant** (nom, % CPU, mémoire, chacun avec une phrase en langage clair). L'échantillonnage reste à une fois par seconde ; les points sont moyennés par minute et écrits en JSONL sous `~/Library/Application Support/MacStats/history/` — chaque point de minute enregistre aussi les trois processus les plus actifs du moment, environ 0,4 Mo par jour, conservés 30 jours par défaut. Réglages → Suivi permet de passer à 7 / 30 / 90 jours, ou de tout effacer.
+
+Deux limites assumées : **les pics GPU ne listent pas de processus** (l'échantillonnage actuel ne fournit pas d'usage GPU fiable par processus), et **l'historique écrit avant cette version ne contient pas de processus** — un clic affiche « Aucun processus enregistré à ce moment » plutôt que de reprendre la liste actuelle.
+
+« Alertes de charge prolongée » est désactivé par défaut. Une fois activé, le CPU ≥ 90 %, la mémoire ≥ 85 % ou le disque ≥ 90 % doivent tenir pendant **trois échantillons consécutifs** avant qu'une notification parte, et chaque indicateur se répète au plus toutes les dix minutes — un pic isolé ne vous interrompt jamais. Le texte nomme le processus responsable : l'événement CPU prend le premier en CPU, l'événement mémoire le premier en mémoire (classements séparés) ; les événements disque n'ont pas d'attribution de processus et n'annoncent que la valeur.
+
+## Nettoyage en un clic des processus d'arrière-plan inactifs
+
+Barre des menus (ou panneau) → « Nettoyer les processus d'arrière-plan inactifs… ». Seuls les **orphelins abandonnés** sont visés : lancés par vous, parent déjà terminé, aucun terminal de contrôle, aucun enfant, aucune socket, et aucune activité CPU depuis 10 minutes. Vous voyez d'abord la liste et l'empreinte annoncée de ces processus (pas ce que macOS récupérera réellement) ; ce n'est qu'après confirmation qu'il envoie `SIGTERM`, et tout ce qui tourne encore après 3 secondes est laissé tranquille — jamais de passage à `SIGKILL`.
+
+Toujours épargnés : les processus système (`/System`, `/usr`, `/Library`, …), les apps et leurs assistants (`.app/` dans le chemin), les commandes rattachées à un tty, l'app au premier plan, les enfants d'un parent vivant, tout ce qui détient une socket TCP/UDP/Unix, les enfants du processus lui-même, et les noms de votre liste blanche (menu → « Liste blanche de nettoyage », comparée au nom de l'exécutable et à `argv[0]`). Les noms cochés restent dans ce sous-menu avec un ✓ pour être décochés plus tard ; « Vider la liste blanche » la réinitialise.
+
+### Chaque processus est expliqué en langage clair
+
+La confirmation indique, pour chaque processus, ce qu'il est et ce que son arrêt change — par exemple `npm run dev` « serveur de développement local ; l'arrêter coupe la page locale et le rechargement à chaud », ou `github-mcp-server` « fournit des outils supplémentaires aux assistants IA ; l'arrêter en retire un jusqu'à la réouverture de cette app ». Les processus inconnus le disent franchement (« une commande d'arrière-plan nommée X, sans fenêtre ni icône ») au lieu de deviner. Les textes vivent dans `ProcessGlossary.swift`, une fonction pure qui associe `argv[0]` → nom de l'exécutable → chemin d'installation.
+
+Sur une machine chargée, il signale souvent qu'il n'y a rien à nettoyer. C'est le fonctionnement prévu, pas une panne : ce qu'il attrape vraiment, ce sont les `node`, `python` ou scripts orphelins laissés par un plantage. Les zombies (état `Z`) sont hors champ — ils ont déjà terminé et seul leur parent peut les récolter.
+
+Vérification en lecture seule (ne tue rien) :
+
+```bash
+cd src && .build/debug/macstatsDiag --cleanup-dry-run
+```
+
+## Fenêtre des Réglages
+
+Barre des menus → « Réglages… » (ou ⌘,) ouvre une fenêtre de réglages standard à cinq onglets :
+
+| Onglet | Contenu |
+|---|---|
+| Général | Langue (suivre le système / 简体中文 / English), affichage dans la barre des menus, ouvrir à la connexion, masquer au démarrage, son et notification de nettoyage, alerte de pression mémoire |
+| Apparence et panneau | Thème (système / sombre / clair), accent (vif / monochrome), afficher le widget de bureau, forme du panneau (bandeau / compact / standard / détaillé), toujours au premier plan, clic à travers |
+| Suivi | Intervalle d'actualisation, fenêtre de lissage (1 / 3 / 5 s), nombre de processus principaux (3 / 5 / 8), historique avec conservation 7 / 30 / 90 jours et effacement, alertes de charge prolongée |
+| Nettoyage | Seuils d'inactivité et de mémoire, liste de processus recherchable avec explications, cocher pour protéger, saisie manuelle d'un nom, actualiser et vider |
+| À propos | Version, architecture de compilation, source des données, déclaration de précision, ouvrir le Moniteur d'activité, lancer un diagnostic |
+
+Le menu contextuel ne garde que les actions quotidiennes : afficher/masquer, déployer/replier, ajouter un widget, nettoyer, liste blanche, Moniteur d'activité, réglages, quitter.
+
 ## Deux surfaces
 
 Une seule couche d'échantillonnage, deux hôtes :
