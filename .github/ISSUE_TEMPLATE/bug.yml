@@ -72,9 +72,10 @@ body:
     id: notarized
     attributes:
       label: 是否公证安装
-      description: 当前版本未做 Apple 公证，首次打开需要右键 →「打开」。这一项决定 Gatekeeper 相关问题怎么排查。
+      description: 当前版本未做 Apple 公证，首次打开要在「系统设置 → 隐私与安全性」里点「仍要打开」，或清隔离属性。这一项决定 Gatekeeper 相关问题怎么排查。
       options:
-        - 未公证（右键 →「打开」放行）
+        - 未公证（系统设置里点「仍要打开」放行）
+        - 未公证（用 xattr 清隔离属性后打开）
         - 已公证（双击直接打开）
         - 不确定
     validations:
