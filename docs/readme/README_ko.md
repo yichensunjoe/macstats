@@ -41,6 +41,15 @@ brew install --cask macstats
 
 다운로드 검증: `shasum -a 256 -c MacStats.zip.sha256` (체크섬은 Release에 첨부).
 
+**설치가 안 될 때**
+
+1. **Gatekeeper가 차단**: 위 방법 중 하나로 허용하세요(시스템 설정의 '확인 없이 열기' 또는 격리 속성 제거). 앱이 손상되었다는 메시지가 뜨면 대개 다운로드가 불완전한 경우이니 먼저 sha256을 검증하고, 실패하면 다시 받으세요. 검증을 통과했는데도 같은 메시지가 나오면 격리 속성을 지우는 방법으로 엽니다.
+2. **아키텍처 불일치**: 배포 패키지는 Apple 실리콘(arm64) 전용이며 Intel Mac에서는 실행되지 않고 Rosetta 빌드도 없습니다. `uname -m`이 `arm64`를 출력해야 합니다.
+3. **macOS 버전이 낮음**: macOS 15(Sequoia) 이상이 필요합니다. `sw_vers -productVersion`으로 확인하세요.
+4. **시스템 위젯이 보이지 않음**: 앱이 `/Applications`에 있는지(다운로드 폴더나 `~/Applications`가 아닌지), 한 번 이상 실행했는지 확인한 뒤 `killall chronod NotificationCenter`를 실행하고 앱을 다시 여세요. 한 Mac에는 앱 하나만 등록되어야 합니다.
+5. **업그레이드 후에도 위젯이 이전 버전**: 새 `MacStats.app`을 `/Applications`에 덮어써도 확장 기능 등록은 자동으로 갱신되지 않아 이전 빌드 기록으로 로드될 수 있습니다. 먼저 앱을 종료했다가 다시 여세요. 그래도 안 되면 확장 기능을 강제로 다시 등록합니다(`lsregister` + `pluginkit`, 명령은 [설치 안내](../install.md)). 버전은 새것인데 데스크톱 모습이 그대로라면 '위젯 편집'에서 한 번 제거한 뒤 다시 추가하세요.
+6. **Homebrew가 untrusted tap을 보고**: Homebrew 5부터 서드파티 tap은 명시적 신뢰가 필요합니다. `brew trust yichensunjoe/macstats` 후 `brew install --cask macstats`를 실행하고, `brew untrust yichensunjoe/macstats`로 철회할 수 있습니다. Homebrew는 격리 속성을 지우지 않으므로 첫 실행에는 위의 허용 절차가 필요합니다.
+
 <p align="center">
   <img src="../live-window.png" alt="MacStats 데스크톱 패널: CPU, 메모리, GPU, 에너지, 디스크, 네트워크와 메모리 상위 3개 프로세스" width="460" />
 </p>

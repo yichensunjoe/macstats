@@ -41,6 +41,15 @@ brew install --cask macstats
 
 Verifique o download com `shasum -a 256 -c MacStats.zip.sha256` (o checksum acompanha o release).
 
+**Se não instalar**
+
+1. **O Gatekeeper bloqueia**: libere por um dos caminhos acima (Ajustes do Sistema → “Abrir Mesmo Assim”, ou remover o atributo de quarentena). Se o macOS disser que o app está danificado, quase sempre é download incompleto: verifique o sha256 e baixe de novo; se a soma conferir, tente remover o atributo de quarentena.
+2. **Arquitetura errada**: o pacote é só para Apple Silicon (arm64); não roda em Macs Intel e não há versão para Rosetta. `uname -m` deve imprimir `arm64`.
+3. **macOS antigo demais**: é preciso macOS 15 (Sequoia) ou mais novo. Confira com `sw_vers -productVersion`.
+4. **O widget não aparece**: confirme que o app está em `/Applications` (não em Downloads nem em `~/Applications`) e que foi aberto ao menos uma vez; depois rode `killall chronod NotificationCenter` e abra o app de novo. Só deve haver uma cópia registrada por Mac.
+5. **O widget continua na versão antiga depois de atualizar**: sobrescrever `MacStats.app` em `/Applications` não atualiza o registro da extensão, então a compilação antiga pode continuar sendo carregada. Feche o app e abra de novo; se não bastar, registre a extensão novamente à força (`lsregister` + `pluginkit`, os comandos estão nas [notas de instalação](../install.md)). Se a versão já é a nova mas o widget parece velho, remova-o em “Editar widgets” e adicione outra vez.
+6. **Homebrew acusa untrusted tap**: desde o Homebrew 5, um tap de terceiros exige confiança explícita: `brew trust yichensunjoe/macstats` antes de `brew install --cask macstats`; `brew untrust yichensunjoe/macstats` revoga. O Homebrew não remove a quarentena, então a primeira abertura ainda precisa da liberação acima.
+
 <p align="center">
   <img src="../live-window.png" alt="Painel do MacStats: CPU, memória, GPU, energia, disco, rede e os três processos que mais consomem memória" width="460" />
 </p>

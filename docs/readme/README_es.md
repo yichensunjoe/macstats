@@ -41,6 +41,15 @@ brew install --cask macstats
 
 Verifica la descarga con `shasum -a 256 -c MacStats.zip.sha256` (la suma de comprobación está adjunta al release).
 
+**Si no se instala**
+
+1. **Gatekeeper lo bloquea**: usa una de las vías de arriba (Ajustes del Sistema → «Abrir igualmente», o eliminar el atributo de cuarentena). Si macOS dice que la app está dañada, casi siempre es una descarga incompleta: verifica el sha256 y vuelve a descargarla; si la suma es correcta, prueba a eliminar el atributo de cuarentena.
+2. **Arquitectura incorrecta**: el paquete es solo para Apple Silicon (arm64); no se ejecuta en Macs Intel y no hay versión Rosetta. `uname -m` debe devolver `arm64`.
+3. **macOS demasiado antiguo**: hace falta macOS 15 (Sequoia) o posterior. Compruébalo con `sw_vers -productVersion`.
+4. **El widget no aparece**: confirma que la app está en `/Applications` (no en Descargas ni en `~/Applications`) y que se ha abierto al menos una vez; luego ejecuta `killall chronod NotificationCenter` y abre la app otra vez. Solo debe haber una copia registrada por Mac.
+5. **El widget sigue en la versión anterior tras actualizar**: sobrescribir `MacStats.app` en `/Applications` no renueva el registro de la extensión, así que puede seguir cargando la compilación antigua. Cierra la app y vuelve a abrirla; si no basta, vuelve a registrar la extensión a la fuerza (`lsregister` + `pluginkit`, los comandos están en las [notas de instalación](../install.md)). Si la versión ya es la nueva pero el widget se ve viejo, quítalo desde «Editar widgets» y vuelve a añadirlo.
+6. **Homebrew avisa de untrusted tap**: desde Homebrew 5, un tap de terceros exige confianza explícita: `brew trust yichensunjoe/macstats` y luego `brew install --cask macstats`; `brew untrust yichensunjoe/macstats` lo revoca. Homebrew no elimina la cuarentena, así que el primer inicio sigue necesitando la autorización de arriba.
+
 <p align="center">
   <img src="../live-window.png" alt="Panel de MacStats: CPU, memoria, GPU, energía, disco, red y los tres procesos que más memoria usan" width="460" />
 </p>

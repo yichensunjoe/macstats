@@ -41,6 +41,15 @@ brew install --cask macstats
 
 Vérifiez le téléchargement avec `shasum -a 256 -c MacStats.zip.sha256` (l'empreinte est jointe à la release).
 
+**Si l'installation échoue**
+
+1. **Gatekeeper bloque l'ouverture** : utilisez l'une des voies ci-dessus (Réglages Système → « Ouvrir quand même », ou suppression de l'attribut de quarantaine). Si macOS indique que l'app est endommagée, le téléchargement est généralement incomplet : vérifiez le sha256 et retéléchargez ; si l'empreinte est bonne, essayez la suppression de l'attribut de quarantaine.
+2. **Mauvaise architecture** : le paquet est réservé à Apple Silicon (arm64) ; il ne fonctionne pas sur Mac Intel et il n'existe pas de version Rosetta. `uname -m` doit afficher `arm64`.
+3. **macOS trop ancien** : macOS 15 (Sequoia) ou ultérieur est requis. Vérifiez avec `sw_vers -productVersion`.
+4. **Le widget n'apparaît pas** : vérifiez que l'app est dans `/Applications` (pas dans Téléchargements ni `~/Applications`) et qu'elle a été lancée au moins une fois, puis exécutez `killall chronod NotificationCenter` et rouvrez l'app. Une seule copie doit être enregistrée par Mac.
+5. **Le widget reste sur l'ancienne version après mise à jour** : remplacer `MacStats.app` dans `/Applications` ne rafraîchit pas l'enregistrement de l'extension, qui peut continuer à charger l'ancienne compilation. Quittez l'app puis rouvrez-la ; si cela ne suffit pas, réenregistrez l'extension de force (`lsregister` + `pluginkit`, commandes dans les [notes d'installation](../install.md)). Si la version est bonne mais que le widget affiche encore l'ancien aspect, retirez-le via « Modifier les widgets » puis ajoutez-le de nouveau.
+6. **Homebrew signale un untrusted tap** : depuis Homebrew 5, un tap tiers exige une confiance explicite : `brew trust yichensunjoe/macstats` avant `brew install --cask macstats` ; `brew untrust yichensunjoe/macstats` l'annule. Homebrew ne supprime pas la quarantaine : le premier lancement demande toujours l'autorisation ci-dessus.
+
 <p align="center">
   <img src="../live-window.png" alt="Panneau MacStats : CPU, mémoire, GPU, énergie, disque, réseau et les trois processus les plus gourmands en mémoire" width="460" />
 </p>

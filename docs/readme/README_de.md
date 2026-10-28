@@ -41,6 +41,15 @@ brew install --cask macstats
 
 Download prüfen: `shasum -a 256 -c MacStats.zip.sha256` (die Prüfsumme liegt beim Release).
 
+**Wenn die Installation scheitert**
+
+1. **Gatekeeper blockiert**: mit einem der Wege oben freigeben (Systemeinstellungen → „Trotzdem öffnen“ oder Quarantäne-Attribut entfernen). Meldet macOS, die App sei beschädigt, ist meist der Download unvollständig — zuerst die sha256 prüfen und neu laden; besteht die Prüfsumme, hilft das Entfernen des Quarantäne-Attributs.
+2. **Falsche Architektur**: Das Release gibt es nur für Apple Silicon (arm64); auf Intel-Macs läuft es nicht, und es gibt keinen Rosetta-Build. `uname -m` muss `arm64` ausgeben.
+3. **macOS zu alt**: macOS 15 (Sequoia) oder neuer ist nötig. Prüfen mit `sw_vers -productVersion`.
+4. **Widget erscheint nicht**: sicherstellen, dass die App in `/Applications` liegt (nicht in Downloads, nicht in `~/Applications`) und mindestens einmal gestartet wurde, dann `killall chronod NotificationCenter` ausführen und die App erneut öffnen. Pro Mac sollte nur eine Kopie registriert sein.
+5. **Widget zeigt nach dem Upgrade noch die alte Version**: ein Überschreiben von `MacStats.app` in `/Applications` aktualisiert die Erweiterungsregistrierung nicht, sodass der alte Build weiter geladen werden kann. Die App einmal beenden und neu öffnen; reicht das nicht, die Erweiterung zwangsweise neu registrieren (`lsregister` + `pluginkit`, Befehle in den [Installationshinweisen](../install.md)). Wenn die Version neu ist, das Widget aber noch alt aussieht, es in „Widgets bearbeiten“ entfernen und neu hinzufügen.
+6. **Homebrew meldet untrusted tap**: Seit Homebrew 5 braucht ein Fremd-Tap explizites Vertrauen: zuerst `brew trust yichensunjoe/macstats`, dann `brew install --cask macstats`; `brew untrust yichensunjoe/macstats` nimmt es zurück. Homebrew entfernt das Quarantäne-Attribut nicht, der erste Start braucht weiterhin die Freigabe oben.
+
 <p align="center">
   <img src="../live-window.png" alt="MacStats-Panel: CPU, Speicher, GPU, Energie, Festplatte, Netzwerk und die drei speicherhungrigsten Prozesse" width="460" />
 </p>

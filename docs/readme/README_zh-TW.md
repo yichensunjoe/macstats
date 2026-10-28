@@ -41,6 +41,15 @@ brew install --cask macstats
 
 下載校驗：`shasum -a 256 -c MacStats.zip.sha256`（校驗檔在 Release 裡）。
 
+**裝不上時先看這裡**
+
+1. **Gatekeeper 攔截**：按上面的方式放行（系統設定裡點「仍要打開」，或清隔離屬性）。若提示「App 已損壞，無法開啟」，多半是下載不完整——先跑 sha256 校驗，失敗就重新下載；校驗通過仍報損壞，用清隔離屬性的方式再開啟。
+2. **架構不對**：只提供 Apple 晶片（arm64）套件，Intel Mac 無法執行，也沒有 Rosetta 版本。`uname -m` 應輸出 `arm64`。
+3. **系統版本太低**：需要 macOS 15（Sequoia）或更新，用 `sw_vers -productVersion` 確認。
+4. **系統小工具不出現**：確認 App 在 `/Applications`（不是下載目錄或 `~/Applications`）、至少啟動過一次，然後 `killall chronod NotificationCenter`，再開啟一次 App；一台機器只應註冊一份。
+5. **升級後小工具還停在舊版本**：把新的 `MacStats.app` 覆蓋進 `/Applications` 不會自動更新擴充功能註冊，系統可能繼續依舊建置記錄載入。先結束並重開一次 App；仍然如此就強制重新註冊擴充功能（`lsregister` + `pluginkit`，指令見[安裝說明](../install.md)）。版本號已是新的、桌面上還是舊樣子，就從「編輯小工具」裡移除再重新加入一次。
+6. **Homebrew 回報 untrusted tap**：Homebrew 5 起第三方 tap 必須先 `brew trust yichensunjoe/macstats`，再 `brew install --cask macstats`；`brew untrust yichensunjoe/macstats` 可撤回。Homebrew 不會替你清隔離屬性，首次啟動仍需按上面放行。
+
 <p align="center">
   <img src="../live-window.png" alt="MacStats 桌面面板：CPU、記憶體、GPU、能耗、磁碟、網路與記憶體佔用最高的程序" width="460" />
 </p>

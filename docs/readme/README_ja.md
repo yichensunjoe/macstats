@@ -41,6 +41,15 @@ brew install --cask macstats
 
 ダウンロードの検証：`shasum -a 256 -c MacStats.zip.sha256`（チェックサムは Release に添付）。
 
+**インストールできないときは**
+
+1. **Gatekeeper にブロックされる**：上のいずれかの方法で許可します（システム設定の「このまま開く」、または隔離属性の削除）。「MacStats は壊れているため開けません」と出る場合はダウンロードが不完全なだけのことが多いので、まず sha256 を検証し、失敗したら再ダウンロードしてください。検証が通っても同じ表示が出るなら、隔離属性を消す方法で開きます。
+2. **アーキテクチャが違う**：配布パッケージは Apple シリコン（arm64）のみで、Intel Mac では動作せず、Rosetta 版もありません。`uname -m` が `arm64` を返す必要があります。
+3. **macOS が古い**：macOS 15（Sequoia）以降が必要です。`sw_vers -productVersion` で確認してください。
+4. **システムウィジェットが現れない**：App が `/Applications` にあるか（ダウンロードフォルダや `~/Applications` ではないか）、一度は起動したかを確認し、`killall chronod NotificationCenter` を実行してからもう一度 App を開きます。1 台の Mac に登録できる App は 1 つだけです。
+5. **アップグレード後もウィジェットが旧バージョンのまま**：新しい `MacStats.app` を `/Applications` に上書きしても拡張機能の登録は自動更新されず、古いビルドの記録で読み込まれることがあります。まず App を終了して開き直してください。それでも直らなければ拡張機能を強制的に再登録します（`lsregister` + `pluginkit`、コマンドは[インストール手順](../install.md)）。バージョンは新しいのにデスクトップの見た目が古いままなら、「ウィジェットを編集」で一度削除して追加し直します。
+6. **Homebrew が untrusted tap を返す**：Homebrew 5 以降はサードパーティ tap を明示的に信頼する必要があります。`brew trust yichensunjoe/macstats` を実行してから `brew install --cask macstats`、`brew untrust yichensunjoe/macstats` で撤回できます。Homebrew は隔離属性を消さないため、初回起動は上記の許可が必要です。
+
 <p align="center">
   <img src="../live-window.png" alt="MacStats のデスクトップパネル：CPU、メモリ、GPU、電力、ディスク、ネットワークとメモリ上位3プロセス" width="460" />
 </p>
