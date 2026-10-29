@@ -1,0 +1,6 @@
+# 本仓库对外公开：AGENTS / HANDOFF / 复用日志 / 任务清单只留本机，不随仓库发布。
+# 每行一个相对项目根的路径；改完跑 bash _scripts/workspace-check.sh 复核。
+AGENTS.md
+HANDOFF.md
+REUSE_AND_PITFALL_LOG.md
+docs/tasks.md

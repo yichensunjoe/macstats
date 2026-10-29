@@ -23,6 +23,42 @@
 
 ---
 
+## 用途
+
+把活动监视器的六个关键读数（CPU、内存、GPU、能耗、磁盘、网络）钉在桌面或菜单栏上，省掉每次打开活动监视器的几步操作。数值逐项对齐活动监视器：同一套 Mach/IOKit/libproc 计数、同样的进位与刷新窗口。
+
+## 当前状态
+
+- `0.4.5` 已发布（2026-10-27，Homebrew Cask 与 GitHub Release 同步）。
+- 开发线在本机继续迭代（当前 build 21）：197 项单测、安装自检 6 项均通过。
+- 已知边界见[已知限制](#已知限制)，尚未实现的能力不在此列。
+
+## 技术栈
+
+- Swift 6 / SwiftPM，无第三方运行时依赖。
+- SwiftUI 负责面板与小组件视图，AppKit（`NSPanel`、`NSStatusItem`）负责桌面层与菜单栏。
+- WidgetKit 扩展共用同一份快照；采样来自 Mach、IOKit、`sysctl` 与 libproc 公开接口。
+- 仅支持 macOS 15+ 的 Apple 芯片（arm64），不提供 Intel 构建。
+
+## 快速开始
+
+```bash
+# 从源码构建、打包并安装到 /Applications
+bash scripts/bundle.sh
+
+# 只想跑测试
+cd src && swift test
+```
+
+不想编译就直接用 [下载安装](#下载安装) 里的 Release 包。
+
+## 配置
+
+- 设置窗口分五页：通用（语言、开机自启、启动时隐藏、通知与音效）、外观与面板、监控（刷新与告警、历史保留、进程）、后台清理（闲置阈值与白名单）、关于。
+- 偏好写入 `UserDefaults`（Bundle ID `com.macstats.app`）；「恢复所有默认设置」只清本应用自己的键。
+- 本地数据在 `~/Library/Application Support/MacStats/`：`history/` 是按天切的 JSONL，`widget-feed.json` 是给小组件扩展的快照。
+- 不需要账号、网络或额外权限（读取进程信息不需要 sudo）。
+
 ## 下载安装
 
 [**下载 MacStats.zip**](https://github.com/yichensunjoe/macstats/releases/latest/download/MacStats.zip)（约 2.5 MB，macOS 15+ / Apple 芯片）
