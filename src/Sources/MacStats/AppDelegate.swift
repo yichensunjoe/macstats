@@ -853,7 +853,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// 「在活动监视器中显示」：macOS 没有提供选中某个 PID 的公开入口，
-    /// 所以打开活动监视器，并把进程名放进剪贴板，⌘F 粘贴即可定位。
+    /// 所以打开活动监视器，并把 PID 放进剪贴板，接着排查时能直接粘进终端。
+    /// 只放 PID、不放「名称 (PID)」：终端里粘上名字会污染 `ps -p` / `sample` 的参数；
+    /// 活动监视器的搜索框也只按名称过滤，不认 PID。
     @objc private func revealProcessFromMenu(_ sender: NSMenuItem) {
         guard let process = processFromMenu(sender) else { return }
         revealInActivityMonitor(process)
@@ -867,7 +869,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func revealInActivityMonitor(_ process: ProcessStatus) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.setString(process.name, forType: .string)
+        pasteboard.setString(String(process.pid), forType: .string)
         Self.openActivityMonitor()
     }
 
