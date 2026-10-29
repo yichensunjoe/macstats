@@ -1,5 +1,50 @@
 import SwiftUI
+import AppKit
 import MacStatsCore
+
+/// 只拦右键的透明层：左键与悬停照旧交给下面的 SwiftUI 按钮，右键交给 AppKit 弹菜单。
+///
+/// SwiftUI 的 `.contextMenu` 在不抢焦点的 `NSPanel` 上经常弹不出来，所以不用它；
+/// 这层直接挂在进程行上，靠 hitTest 按事件类型放行，不改变任何视觉。
+struct ProcessContextMenuOverlay: NSViewRepresentable {
+    /// 右键时现建菜单，拿到的永远是当前采样与保护规则。
+    var menuProvider: () -> NSMenu?
+
+    func makeNSView(context: Context) -> MenuHitView {
+        let view = MenuHitView()
+        view.menuProvider = menuProvider
+        view.setAccessibilityElement(false)
+        return view
+    }
+
+    func updateNSView(_ nsView: MenuHitView, context: Context) {
+        nsView.menuProvider = menuProvider
+    }
+
+    final class MenuHitView: NSView {
+        var menuProvider: (() -> NSMenu?)?
+
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        /// 只有右键归这层；左键、悬停返回 nil，事件继续落到 SwiftUI 的按钮上。
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            switch NSApp.currentEvent?.type {
+            case .rightMouseDown, .rightMouseUp:
+                return self
+            default:
+                return nil
+            }
+        }
+
+        override func rightMouseDown(with event: NSEvent) {
+            guard let menu = menuProvider?() else {
+                super.rightMouseDown(with: event)
+                return
+            }
+            menu.popUp(positioning: nil, at: convert(event.locationInWindow, from: nil), in: self)
+        }
+    }
+}
 
 /// 统一的小卡片容器：图标 + 标题 + 内容。
 /// 高度不再写死：卡片随窗口伸缩，网格行高由外部决定。

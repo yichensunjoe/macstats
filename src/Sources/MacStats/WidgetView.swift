@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import Observation
 import MacStatsCore
 
@@ -46,6 +47,8 @@ struct WidgetView: View {
     var onCleanup: () -> Void = {}
     /// 点进程行时打开详情（退出 / 强制退出）。nil 表示这份渲染不可交互（离屏截图、WidgetKit）。
     var onProcessTap: ((ProcessStatus) -> Void)?
+    /// 右键进程行时的菜单；nil 表示不提供右键（离屏截图、WidgetKit）。
+    var onProcessMenu: ((ProcessStatus) -> NSMenu?)?
     /// 切换进程榜口径时通知宿主落盘。离屏渲染不传，视图照样按数据里的口径画。
     var onProcessSortChange: (ProcessSort) -> Void = { _ in }
 
@@ -62,6 +65,7 @@ struct WidgetView: View {
         onOpenActivityMonitor: @escaping () -> Void = {},
         onCleanup: @escaping () -> Void = {},
         onProcessTap: ((ProcessStatus) -> Void)? = nil,
+        onProcessMenu: ((ProcessStatus) -> NSMenu?)? = nil,
         onProcessSortChange: @escaping (ProcessSort) -> Void = { _ in }
     ) {
         self.model = model
@@ -70,6 +74,7 @@ struct WidgetView: View {
         self.onOpenActivityMonitor = onOpenActivityMonitor
         self.onCleanup = onCleanup
         self.onProcessTap = onProcessTap
+        self.onProcessMenu = onProcessMenu
         self.onProcessSortChange = onProcessSortChange
     }
 
@@ -80,6 +85,7 @@ struct WidgetView: View {
         onOpenActivityMonitor: @escaping () -> Void = {},
         onCleanup: @escaping () -> Void = {},
         onProcessTap: ((ProcessStatus) -> Void)? = nil,
+        onProcessMenu: ((ProcessStatus) -> NSMenu?)? = nil,
         onProcessSortChange: @escaping (ProcessSort) -> Void = { _ in }
     ) {
         self.model = WidgetViewModel(data: data)
@@ -88,6 +94,7 @@ struct WidgetView: View {
         self.onOpenActivityMonitor = onOpenActivityMonitor
         self.onCleanup = onCleanup
         self.onProcessTap = onProcessTap
+        self.onProcessMenu = onProcessMenu
         self.onProcessSortChange = onProcessSortChange
     }
 
@@ -679,7 +686,8 @@ struct WidgetView: View {
                         process: process,
                         fraction: processFraction(process, in: processes),
                         tint: processSort == .cpu ? Theme.cpu : Theme.memory,
-                        action: onProcessTap
+                        action: onProcessTap,
+                        menuProvider: onProcessMenu
                     )
                 }
                 if processes.isEmpty {
@@ -826,6 +834,8 @@ private struct ProcessLine: View {
     let fraction: Double
     let tint: Color
     let action: ((ProcessStatus) -> Void)?
+    /// 右键菜单；与左键的详情同一套动作（查看详情 / 退出 / 强制退出）。
+    let menuProvider: ((ProcessStatus) -> NSMenu?)?
 
     @State private var hovered = false
 
@@ -853,6 +863,12 @@ private struct ProcessLine: View {
         .disabled(!interactive)
         .onHover { hovered = $0 }
         .help(interactive ? L10n.t(.processTapHint) : "")
+        .overlay {
+            if let menuProvider {
+                ProcessContextMenuOverlay { menuProvider(process) }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
     }
 }
 

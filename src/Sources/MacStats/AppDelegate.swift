@@ -111,6 +111,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var removeAllItem: NSMenuItem?
     /// 菜单栏「占用前三」里各项对应的进程。菜单每次弹出时重建，索引即 representedObject。
     private var menuProcessCache: [ProcessStatus] = []
+    /// 面板进程行右键菜单的目标，同样用索引塞进 representedObject。
+    private var panelMenuProcesses: [ProcessStatus] = []
 
     // 设置窗口：状态镜像在 SettingsModel 里，窗口只在需要时创建。
     private lazy var settingsModel = SettingsModel(app: self)
@@ -520,6 +522,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     self?.triggerTick()
                 }
             },
+            // 右键进程行：与菜单栏同一组「查看详情 / 退出 / 强制退出」。
+            onProcessMenu: { [weak self] process in self?.processContextMenu(for: process) },
             // 标题旁的小开关切换口径：立即写偏好并刷新共享模型，
             // 不等下一次采样，多个面板同步。
             onProcessSortChange: { [weak self] sort in self?.setProcessSort(sort) }
@@ -736,7 +740,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             for entry in group.entries {
                 let row = NSMenuItem(title: entry.title, action: nil, keyEquivalent: "")
                 row.toolTip = L10n.t(.processTapHint)
-                row.submenu = processActionsMenu(for: entry, index: menuProcessCache.count)
+                row.submenu = processActionsMenu(
+                    for: entry,
+                    index: menuProcessCache.count,
+                    openDetails: #selector(openProcessFromMenu(_:)),
+                    quit: #selector(quitProcessFromMenu(_:)),
+                    forceQuit: #selector(forceQuitProcessFromMenu(_:))
+                )
                 menuProcessCache.append(entry.process)
                 submenu.addItem(row)
             }
@@ -746,13 +756,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return item
     }
 
-    /// 单条进程的动作子菜单：详情 / 退出 / 强制退出。
+    /// 单条进程的动作菜单：详情 / 退出 / 强制退出。
+    /// 菜单栏里是每条进程的子菜单，面板右键直接弹这一组；两处共用同一份判定与文案。
     /// 菜单项自己控可用性：受保护进程必须禁用退出，不能让 AppKit 按 target 自动放行。
-    private func processActionsMenu(for entry: ProcessMenuEntry, index: Int) -> NSMenu {
+    private func processActionsMenu(
+        for entry: ProcessMenuEntry,
+        index: Int,
+        openDetails: Selector,
+        quit: Selector,
+        forceQuit: Selector
+    ) -> NSMenu {
         let actions = NSMenu()
         actions.autoenablesItems = false
 
-        let inspect = NSMenuItem(title: L10n.t(.menuViewDetails), action: #selector(openProcessFromMenu(_:)), keyEquivalent: "")
+        let inspect = NSMenuItem(title: L10n.t(.menuViewDetails), action: openDetails, keyEquivalent: "")
         inspect.target = self
         inspect.representedObject = NSNumber(value: index)
         actions.addItem(inspect)
@@ -764,19 +781,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             actions.addItem(reason)
         }
 
-        let quit = NSMenuItem(title: L10n.t(.quitProcess), action: #selector(quitProcessFromMenu(_:)), keyEquivalent: "")
-        quit.target = self
-        quit.representedObject = NSNumber(value: index)
-        quit.isEnabled = entry.refusal == nil
-        actions.addItem(quit)
+        let quitItem = NSMenuItem(title: L10n.t(.quitProcess), action: quit, keyEquivalent: "")
+        quitItem.target = self
+        quitItem.representedObject = NSNumber(value: index)
+        quitItem.isEnabled = entry.refusal == nil
+        actions.addItem(quitItem)
 
-        let force = NSMenuItem(title: L10n.t(.forceQuitProcess), action: #selector(forceQuitProcessFromMenu(_:)), keyEquivalent: "")
-        force.target = self
-        force.representedObject = NSNumber(value: index)
-        force.isEnabled = entry.refusal == nil
-        actions.addItem(force)
+        let forceItem = NSMenuItem(title: L10n.t(.forceQuitProcess), action: forceQuit, keyEquivalent: "")
+        forceItem.target = self
+        forceItem.representedObject = NSNumber(value: index)
+        forceItem.isEnabled = entry.refusal == nil
+        actions.addItem(forceItem)
 
         return actions
+    }
+
+    /// 面板进程行的右键菜单。现查保护规则，右键时拿到的是最新事实。
+    private func processContextMenu(for process: ProcessStatus) -> NSMenu {
+        panelMenuProcesses = [process]
+        return processActionsMenu(
+            for: ProcessMenuEntry(
+                process: process,
+                title: "",
+                refusal: ProcessTerminator.refusal(pid: process.pid)
+            ),
+            index: 0,
+            openDetails: #selector(openProcessFromPanelMenu(_:)),
+            quit: #selector(quitProcessFromPanelMenu(_:)),
+            forceQuit: #selector(forceQuitProcessFromPanelMenu(_:))
+        )
     }
 
     /// 菜单项存的是建菜单时的索引；按 PID 取最新读数，进程已消失时回落快照。
@@ -809,25 +842,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    /// 菜单里的「强制退出」：默认先确认，设置关掉后直接发 SIGKILL；SIGKILL 不给进程保存机会。
+    /// 菜单栏里的「强制退出」：默认先确认，设置关掉后直接发 SIGKILL。
     @objc private func forceQuitProcessFromMenu(_ sender: NSMenuItem) {
         guard let process = processFromMenu(sender) else { return }
+        DispatchQueue.main.async { [weak self] in self?.requestForceQuit(process) }
+    }
+
+    private func processFromPanelMenu(_ sender: NSMenuItem) -> ProcessStatus? {
+        guard let number = sender.representedObject as? NSNumber else { return nil }
+        let index = number.intValue
+        guard index >= 0, index < panelMenuProcesses.count else { return nil }
+        return panelMenuProcesses[index]
+    }
+
+    @objc private func openProcessFromPanelMenu(_ sender: NSMenuItem) {
+        guard let process = processFromPanelMenu(sender) else { return }
         DispatchQueue.main.async { [weak self] in
-            guard let self else { return }
-            guard confirmForceQuit else {
-                terminateFromMenu(process, by: .force)
-                return
-            }
-            let alert = NSAlert()
-            alert.messageText = L10n.format(.menuForceQuitTitle, process.name)
-            alert.informativeText = L10n.t(.forceQuitConfirm)
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: L10n.t(.forceQuitNow))
-            alert.addButton(withTitle: L10n.t(.cancel))
             NSApp.activate()
-            guard alert.runModal() == .alertFirstButtonReturn else { return }
-            self.terminateFromMenu(process, by: .force)
+            ProcessDialogs.showProcess(process, confirmForceQuit: self?.confirmForceQuit ?? true) { [weak self] in
+                self?.playSoundEffect()
+                self?.triggerTick()
+            }
         }
+    }
+
+    @objc private func quitProcessFromPanelMenu(_ sender: NSMenuItem) {
+        guard let process = processFromPanelMenu(sender) else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.terminateFromMenu(process, by: .quit)
+        }
+    }
+
+    @objc private func forceQuitProcessFromPanelMenu(_ sender: NSMenuItem) {
+        guard let process = processFromPanelMenu(sender) else { return }
+        DispatchQueue.main.async { [weak self] in self?.requestForceQuit(process) }
+    }
+
+    /// 强制退出前的确认：开关关掉就直接发信号，开关打开则用原生弹窗再问一次。
+    private func requestForceQuit(_ process: ProcessStatus) {
+        guard confirmForceQuit else {
+            terminateFromMenu(process, by: .force)
+            return
+        }
+        let alert = NSAlert()
+        alert.messageText = L10n.format(.menuForceQuitTitle, process.name)
+        alert.informativeText = L10n.t(.forceQuitConfirm)
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L10n.t(.forceQuitNow))
+        alert.addButton(withTitle: L10n.t(.cancel))
+        NSApp.activate()
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        terminateFromMenu(process, by: .force)
     }
 
     private func terminateFromMenu(_ process: ProcessStatus, by signal: TerminationSignal) {
