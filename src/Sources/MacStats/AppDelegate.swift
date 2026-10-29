@@ -335,6 +335,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             menu.addItem(switchItem)
         }
 
+        // 面板被窗口盖住时右键落不到，菜单栏这里也能切；两边共用同一个子菜单构造。
+        menu.addItem(processRankingMenuItem())
+
         let addItem = NSMenuItem(title: L10n.t(.menuAddWidget), action: nil, keyEquivalent: "")
         let addMenu = NSMenu()
         for layout in WidgetLayout.allCases {
@@ -645,23 +648,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         switchItem.representedObject = id
         menu.addItem(switchItem)
 
-        // 进程榜口径：不必瞄准卡片标题旁的小开关，右键也能切。菜单每次打开时重建，
-        // 勾选状态直接读当前偏好。
-        let rankingItem = NSMenuItem(title: L10n.t(.menuProcessRanking), action: nil, keyEquivalent: "")
-        let rankingMenu = NSMenu()
-        for sort in ProcessSort.allCases {
-            let item = NSMenuItem(
-                title: sort.title,
-                action: #selector(setProcessSortFromMenu(_:)),
-                keyEquivalent: ""
-            )
-            item.target = self
-            item.representedObject = sort.rawValue
-            item.state = sort == processSort ? .on : .off
-            rankingMenu.addItem(item)
-        }
-        rankingItem.submenu = rankingMenu
-        menu.addItem(rankingItem)
+        menu.addItem(processRankingMenuItem())
 
         let copy = NSMenuItem(title: L10n.t(.menuDuplicateWidget), action: #selector(duplicateWidget(_:)), keyEquivalent: "")
         copy.target = self
@@ -690,6 +677,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         menu.addItem(withTitle: L10n.t(.menuQuit), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
         return menu
+    }
+
+    /// 「进程榜」子菜单：面板右键与菜单栏下拉共用。菜单每次弹出时重建，勾选读当前偏好。
+    private func processRankingMenuItem() -> NSMenuItem {
+        let item = NSMenuItem(title: L10n.t(.menuProcessRanking), action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+        for sort in ProcessSort.allCases {
+            let entry = NSMenuItem(
+                title: sort.title,
+                action: #selector(setProcessSortFromMenu(_:)),
+                keyEquivalent: ""
+            )
+            entry.target = self
+            entry.representedObject = sort.rawValue
+            entry.state = sort == processSort ? .on : .off
+            submenu.addItem(entry)
+        }
+        item.submenu = submenu
+        return item
     }
 
     @objc private func refreshNow() { triggerTick() }
