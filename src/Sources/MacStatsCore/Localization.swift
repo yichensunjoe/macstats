@@ -279,6 +279,8 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case menuTopProcesses
     case menuTopByMetric
     case menuViewDetails
+    case menuRevealInActivityMonitor
+    case menuRevealInActivityMonitorHint
     case menuQuitFailed
     case menuForceQuitTitle
     case menuDuplicateWidget
@@ -612,6 +614,8 @@ public final class L10n: @unchecked Sendable {
         .menuTopProcesses: "占用前三",
         .menuTopByMetric: "%@ 前三",
         .menuViewDetails: "查看详情",
+        .menuRevealInActivityMonitor: "在活动监视器中显示",
+        .menuRevealInActivityMonitorHint: "打开活动监视器，并把进程名复制到剪贴板；⌘F 粘贴即可定位。",
         .menuQuitFailed: "没能结束进程",
         .menuForceQuitTitle: "强制退出 %@？",
         .menuDuplicateWidget: "复制一个同样的小组件",
@@ -879,6 +883,8 @@ public final class L10n: @unchecked Sendable {
         .menuTopProcesses: "Top 3 Processes",
         .menuTopByMetric: "Top 3 by %@",
         .menuViewDetails: "View Details",
+        .menuRevealInActivityMonitor: "Show in Activity Monitor",
+        .menuRevealInActivityMonitorHint: "Opens Activity Monitor and copies the process name; paste it with ⌘F to locate it.",
         .menuQuitFailed: "Couldn't Quit Process",
         .menuForceQuitTitle: "Force Quit %@?",
         .menuDuplicateWidget: "Duplicate Widget",

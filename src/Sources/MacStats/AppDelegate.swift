@@ -744,6 +744,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     for: entry,
                     index: menuProcessCache.count,
                     openDetails: #selector(openProcessFromMenu(_:)),
+                    reveal: #selector(revealProcessFromMenu(_:)),
                     quit: #selector(quitProcessFromMenu(_:)),
                     forceQuit: #selector(forceQuitProcessFromMenu(_:))
                 )
@@ -763,6 +764,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         for entry: ProcessMenuEntry,
         index: Int,
         openDetails: Selector,
+        reveal: Selector,
         quit: Selector,
         forceQuit: Selector
     ) -> NSMenu {
@@ -773,6 +775,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         inspect.target = self
         inspect.representedObject = NSNumber(value: index)
         actions.addItem(inspect)
+
+        let activity = NSMenuItem(title: L10n.t(.menuRevealInActivityMonitor), action: reveal, keyEquivalent: "")
+        activity.target = self
+        activity.representedObject = NSNumber(value: index)
+        activity.toolTip = L10n.t(.menuRevealInActivityMonitorHint)
+        actions.addItem(activity)
         actions.addItem(.separator())
 
         if let refusal = entry.refusal {
@@ -807,6 +815,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             ),
             index: 0,
             openDetails: #selector(openProcessFromPanelMenu(_:)),
+            reveal: #selector(revealProcessFromPanelMenu(_:)),
             quit: #selector(quitProcessFromPanelMenu(_:)),
             forceQuit: #selector(forceQuitProcessFromPanelMenu(_:))
         )
@@ -840,6 +849,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         DispatchQueue.main.async { [weak self] in
             self?.terminateFromMenu(process, by: .quit)
         }
+    }
+
+    /// 「在活动监视器中显示」：macOS 没有提供选中某个 PID 的公开入口，
+    /// 所以打开活动监视器，并把进程名放进剪贴板，⌘F 粘贴即可定位。
+    @objc private func revealProcessFromMenu(_ sender: NSMenuItem) {
+        guard let process = processFromMenu(sender) else { return }
+        revealInActivityMonitor(process)
+    }
+
+    @objc private func revealProcessFromPanelMenu(_ sender: NSMenuItem) {
+        guard let process = processFromPanelMenu(sender) else { return }
+        revealInActivityMonitor(process)
+    }
+
+    private func revealInActivityMonitor(_ process: ProcessStatus) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(process.name, forType: .string)
+        Self.openActivityMonitor()
     }
 
     /// 菜单栏里的「强制退出」：默认先确认，设置关掉后直接发 SIGKILL。
