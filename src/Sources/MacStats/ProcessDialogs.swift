@@ -24,12 +24,22 @@ enum ProcessDialogs {
     }
 
     /// 单个进程的详情与操作。对应「在活动监视器里双击一行」：
-    /// 看信息、正常退出，或二次确认后强制退出。
-    static func showProcess(_ process: ProcessStatus, onTerminated: @escaping () -> Void) {
+    /// 看信息、正常退出，或二次确认后强制退出；`confirmForceQuit` 由偏好控制。
+    static func showProcess(
+        _ process: ProcessStatus,
+        confirmForceQuit: Bool = true,
+        onTerminated: @escaping () -> Void
+    ) {
         let detail = ProcessInventory.detail(pid: process.pid)
         let refusal = detail.map { ProcessTerminator.refusal(for: $0) } ?? .notFound
         _ = present(
-            ProcessActionView(process: process, detail: detail, refusal: refusal, onTerminated: onTerminated),
+            ProcessActionView(
+                process: process,
+                detail: detail,
+                refusal: refusal,
+                confirmForceQuit: confirmForceQuit,
+                onTerminated: onTerminated
+            ),
             size: CGSize(width: 560, height: refusal == nil ? 486 : 424),
             title: L10n.t(.processInfo)
         )
@@ -393,6 +403,8 @@ private struct ProcessActionView: View {
     let process: ProcessStatus
     let detail: ProcessDetail?
     let refusal: TerminationRefusal?
+    /// false 时强制退出直接发 SIGKILL，不再在窗内二次确认。
+    let confirmForceQuit: Bool
     let onTerminated: () -> Void
 
     @State private var working = false
@@ -567,9 +579,15 @@ private struct ProcessActionView: View {
                     .keyboardShortcut(.cancelAction)
                 Button(L10n.t(.quitProcess)) { run(.quit) }
                     .disabled(!canAct)
-                Button(L10n.t(.forceQuitProcess)) { confirmingForce = true }
-                    .disabled(!canAct)
-                    .tint(.red)
+                Button(L10n.t(.forceQuitProcess)) {
+                    if confirmForceQuit {
+                        confirmingForce = true
+                    } else {
+                        run(.force)
+                    }
+                }
+                .disabled(!canAct)
+                .tint(.red)
             }
         }
         .padding(16)

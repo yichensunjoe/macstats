@@ -96,6 +96,8 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case notifyOnCleanupDesc
     case soundEffects
     case soundEffectsDesc
+    case confirmForceQuit
+    case confirmForceQuitDesc
     case memoryAlert
     case memoryAlertDesc
 
@@ -434,6 +436,8 @@ public final class L10n: @unchecked Sendable {
         .notifyOnCleanupDesc: "终止后台孤儿进程后发送 macOS 横幅通知。",
         .soundEffects: "操作反馈音效",
         .soundEffectsDesc: "清理完成或触发关键操作时播放系统提示音。",
+        .confirmForceQuit: "强制退出前确认",
+        .confirmForceQuitDesc: "关闭后，菜单与进程详情里的强制退出会立即发送 SIGKILL，不再询问。默认开启。",
         .memoryAlert: "内存压力严重警告",
         .memoryAlertDesc: "当系统内存压力升至警告或危急级别时自动提醒。",
 
@@ -699,6 +703,8 @@ public final class L10n: @unchecked Sendable {
         .notifyOnCleanupDesc: "Post a banner notification when idle processes are terminated.",
         .soundEffects: "Sound Effects",
         .soundEffectsDesc: "Play feedback sound effect when cleanup completes.",
+        .confirmForceQuit: "Confirm Before Force Quit",
+        .confirmForceQuitDesc: "When off, Force Quit sends SIGKILL immediately from the menu and process details without asking. On by default.",
         .memoryAlert: "Critical Memory Alert",
         .memoryAlertDesc: "Notify when memory pressure reaches warning or critical levels.",
 

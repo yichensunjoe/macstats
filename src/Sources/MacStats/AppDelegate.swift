@@ -39,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         static let notifyOnCleanup = "notifyOnCleanup"
         static let soundEffects = "soundEffects"
         static let memoryAlert = "memoryAlert"
+        static let confirmForceQuit = "confirmForceQuit"
         static let cleanupMinimumIdle = "cleanupMinimumIdle"
         static let cleanupMinMemoryMB = "cleanupMinMemoryMB"
         static let topProcessesCount = "topProcessesCount"
@@ -94,6 +95,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var notifyOnCleanupEnabled = true
     var soundEffectsEnabled = true
     var memoryAlertEnabled = false
+    /// 强制退出前是否再问一次。默认开启；关掉后菜单与详情窗都直接发 SIGKILL。
+    var confirmForceQuit = true
     var cleanupMinimumIdle: TimeInterval = 600
     var cleanupMinMemoryMB: Int = 20
     var topProcessesCount: Int = 5
@@ -237,6 +240,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         if defaults.object(forKey: Key.memoryAlert) != nil {
             memoryAlertEnabled = defaults.bool(forKey: Key.memoryAlert)
+        }
+        // 键缺失即默认开启：老用户升级后仍然保留二次确认。
+        if defaults.object(forKey: Key.confirmForceQuit) != nil {
+            confirmForceQuit = defaults.bool(forKey: Key.confirmForceQuit)
         }
 
         if defaults.object(forKey: Key.cleanupMinimumIdle) != nil {
@@ -508,7 +515,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // 所以只有宿主应用的面板会传回调。
             onProcessTap: { [weak self] process in
                 NSApp.activate()
-                ProcessDialogs.showProcess(process) { [weak self] in
+                ProcessDialogs.showProcess(process, confirmForceQuit: self?.confirmForceQuit ?? true) { [weak self] in
                     self?.playSoundEffect()
                     self?.triggerTick()
                 }
@@ -787,7 +794,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard let live = processFromMenu(sender) else { return }
         DispatchQueue.main.async { [weak self] in
             NSApp.activate()
-            ProcessDialogs.showProcess(live) { [weak self] in
+            ProcessDialogs.showProcess(live, confirmForceQuit: self?.confirmForceQuit ?? true) { [weak self] in
                 self?.playSoundEffect()
                 self?.triggerTick()
             }
@@ -802,11 +809,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    /// 菜单里的「强制退出」：先确认，再走同一终止路径；SIGKILL 不给进程保存机会。
+    /// 菜单里的「强制退出」：默认先确认，设置关掉后直接发 SIGKILL；SIGKILL 不给进程保存机会。
     @objc private func forceQuitProcessFromMenu(_ sender: NSMenuItem) {
         guard let process = processFromMenu(sender) else { return }
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
+            guard confirmForceQuit else {
+                terminateFromMenu(process, by: .force)
+                return
+            }
             let alert = NSAlert()
             alert.messageText = L10n.format(.menuForceQuitTitle, process.name)
             alert.informativeText = L10n.t(.forceQuitConfirm)
@@ -1120,6 +1131,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    func setConfirmForceQuit(_ on: Bool) {
+        confirmForceQuit = on
+        defaults.set(on, forKey: Key.confirmForceQuit)
+    }
+
     // MARK: - 历史与阈值告警
 
     func setHistoryEnabled(_ on: Bool) {
@@ -1186,6 +1202,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         setSoundEffects(true)
         setNotifyOnCleanup(true)
         setMemoryAlert(false)
+        setConfirmForceQuit(true)
         setShowMenuBarStats(true)
         setHistoryEnabled(true)
         setHistoryRetentionDays(30)
@@ -1213,7 +1230,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             Key.frame, Key.interval, Key.floating, Key.clickThrough, Key.visible,
             Key.cleanupWhitelist, Key.appLanguage, Key.appearanceMode,
             Key.accentTint, Key.smoothingWindow, Key.startHidden,
-            Key.notifyOnCleanup, Key.soundEffects, Key.memoryAlert,
+            Key.notifyOnCleanup, Key.soundEffects, Key.memoryAlert, Key.confirmForceQuit,
             Key.cleanupMinimumIdle, Key.cleanupMinMemoryMB, Key.topProcessesCount,
             Key.processSort, Key.showMenuBarStats, Key.historyEnabled,
             Key.historyRetentionDays, Key.thresholdAlerts

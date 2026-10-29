@@ -52,6 +52,7 @@ final class SettingsModel {
     var showMenuBarStats = true
     var soundEffects = true
     var notifyOnCleanup = true
+    var confirmForceQuit = true
     var memoryAlert = false
 
     // 历史与阈值
@@ -108,6 +109,7 @@ final class SettingsModel {
         showMenuBarStats = app.showMenuBarStats
         soundEffects = app.soundEffectsEnabled
         notifyOnCleanup = app.notifyOnCleanupEnabled
+        confirmForceQuit = app.confirmForceQuit
         memoryAlert = app.memoryAlertEnabled
 
         historyEnabled = app.historyEnabled
@@ -215,6 +217,11 @@ final class SettingsModel {
     func setNotifyOnCleanup(_ on: Bool) {
         notifyOnCleanup = on
         app?.setNotifyOnCleanup(on)
+    }
+
+    func setConfirmForceQuit(_ on: Bool) {
+        confirmForceQuit = on
+        app?.setConfirmForceQuit(on)
     }
 
     func setMemoryAlert(_ on: Bool) {
@@ -550,10 +557,18 @@ struct SettingsView: View {
                     Text(L10n.t(.processesCount8)).tag(8)
                 }
                 .pickerStyle(.segmented)
+
+                Toggle(L10n.t(.confirmForceQuit), isOn: Binding(
+                    get: { model.confirmForceQuit },
+                    set: { model.setConfirmForceQuit($0) }
+                ))
             } header: {
                 sectionHeader(title: L10n.t(.processesSection), systemImage: "list.bullet.rectangle", color: .indigo)
             } footer: {
-                Text(L10n.t(.processesHint))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.t(.processesHint))
+                    Text(L10n.t(.confirmForceQuitDesc))
+                }
             }
 
             Section {
