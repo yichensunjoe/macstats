@@ -276,6 +276,9 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case menuProcessRanking
     case menuTopProcesses
     case menuTopByMetric
+    case menuViewDetails
+    case menuQuitFailed
+    case menuForceQuitTitle
     case menuDuplicateWidget
     case menuPinToDesktop
     case menuAlwaysOnTop
@@ -604,6 +607,9 @@ public final class L10n: @unchecked Sendable {
         .menuProcessRanking: "进程榜",
         .menuTopProcesses: "占用前三",
         .menuTopByMetric: "%@ 前三",
+        .menuViewDetails: "查看详情",
+        .menuQuitFailed: "没能结束进程",
+        .menuForceQuitTitle: "强制退出 %@？",
         .menuDuplicateWidget: "复制一个同样的小组件",
         .menuPinToDesktop: "固定在桌面",
         .menuAlwaysOnTop: "始终置顶",
@@ -866,6 +872,9 @@ public final class L10n: @unchecked Sendable {
         .menuProcessRanking: "Process ranking",
         .menuTopProcesses: "Top 3 Processes",
         .menuTopByMetric: "Top 3 by %@",
+        .menuViewDetails: "View Details",
+        .menuQuitFailed: "Couldn't Quit Process",
+        .menuForceQuitTitle: "Force Quit %@?",
         .menuDuplicateWidget: "Duplicate Widget",
         .menuPinToDesktop: "Pin to Desktop",
         .menuAlwaysOnTop: "Always on Top",

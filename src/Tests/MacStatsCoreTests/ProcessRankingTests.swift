@@ -371,4 +371,24 @@ final class ProcessRankingTests: XCTestCase {
         XCTAssertEqual(ProcessMenuBuilder.groups(from: snapshot, limit: 2)[1].entries.map(\.process.pid), [5, 4])
         XCTAssertTrue(ProcessMenuBuilder.groups(from: snapshot, limit: 0).allSatisfy { $0.entries.isEmpty })
     }
+
+    /// 受保护进程的拒绝原因要跟着条目走，菜单据此禁用退出 / 强制退出；默认不查时全部可退出。
+    func testProcessMenuGroupsCarryRefusalForProtectedProcesses() {
+        var snapshot = MetricSnapshot.empty
+        snapshot.processes = [
+            process(pid: 1, name: "WindowServer", cpu: 0.2, memory: 838_860_800),
+            process(pid: 2, name: "Safari", cpu: 0.3, memory: 419_430_400)
+        ]
+        snapshot.cpuProcesses = snapshot.processes
+
+        let groups = ProcessMenuBuilder.groups(from: snapshot) { process in
+            process.name == "WindowServer" ? .systemProcess : nil
+        }
+        let cpuEntries = groups[0].entries
+        XCTAssertEqual(cpuEntries.first(where: { $0.process.name == "WindowServer" })?.refusal, .systemProcess)
+        XCTAssertNil(cpuEntries.first(where: { $0.process.name == "Safari" })?.refusal)
+
+        let unchecked = ProcessMenuBuilder.groups(from: snapshot)
+        XCTAssertTrue(unchecked.allSatisfy { $0.entries.allSatisfy { $0.refusal == nil } })
+    }
 }

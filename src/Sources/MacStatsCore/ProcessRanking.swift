@@ -33,10 +33,13 @@ public enum ProcessSort: String, CaseIterable, Sendable {
 public struct ProcessMenuEntry: Equatable, Sendable {
     public var process: ProcessStatus
     public var title: String
+    /// 非空表示这个进程受保护：菜单要禁用退出 / 强制退出，并直接写明原因。
+    public var refusal: TerminationRefusal?
 
-    public init(process: ProcessStatus, title: String) {
+    public init(process: ProcessStatus, title: String, refusal: TerminationRefusal? = nil) {
         self.process = process
         self.title = title
+        self.refusal = refusal
     }
 }
 
@@ -58,7 +61,13 @@ public struct ProcessMenuGroup: Equatable, Sendable {
 /// CPU 在前、内存在后：面板被挡住时两张榜都要能看，不能只给当前排序的一张；
 /// 取数用采样层在按内存截断之前算好的 `cpuProcesses`，否则高 CPU、低内存的进程永远进不来。
 public enum ProcessMenuBuilder {
-    public static func groups(from snapshot: MetricSnapshot, limit: Int = 3) -> [ProcessMenuGroup] {
+    /// `refusal` 只在构建菜单时调用（最多 6 次），默认不查，便于单测保持纯函数；
+    /// 宿主传入 `ProcessTerminator.refusal(pid:)`，让受保护进程的退出项提前禁用。
+    public static func groups(
+        from snapshot: MetricSnapshot,
+        limit: Int = 3,
+        refusal: (ProcessStatus) -> TerminationRefusal? = { _ in nil }
+    ) -> [ProcessMenuGroup] {
         let capped = max(0, limit)
         return [ProcessSort.cpu, .memory].map { sort in
             // 不依赖调用方已排好：旧快照或手动构造的快照可能乱序，菜单不能跟着乱。
@@ -69,7 +78,11 @@ public enum ProcessMenuBuilder {
                 let value = sort == .cpu
                     ? PercentFormat.processCPU(process.cpu)
                     : ByteFormat.processMemory(process.memory)
-                return ProcessMenuEntry(process: process, title: "\(process.name)  —  \(value)")
+                return ProcessMenuEntry(
+                    process: process,
+                    title: "\(process.name)  —  \(value)",
+                    refusal: refusal(process)
+                )
             }
             return ProcessMenuGroup(
                 sort: sort,

@@ -702,14 +702,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return item
     }
 
-    /// 「占用前三」子菜单：CPU 与内存各取三名，点一条就看详情（详情里可退出或强制退出）。
+    /// 「占用前三」子菜单：CPU 与内存各取三名；每条进程下直接给详情、退出与强制退出。
+    /// 受保护进程的退出项提前禁用并写明原因，和面板详情窗用的是同一套 `ProcessTerminator` 规则。
     /// 之所以不在主菜单里平铺：六条动态行会把常用项挤下去，子菜单里仍是一次悬停。
     private func topProcessesMenuItem() -> NSMenuItem {
         let item = NSMenuItem(title: L10n.t(.menuTopProcesses), action: nil, keyEquivalent: "")
         let submenu = NSMenu()
         menuProcessCache.removeAll(keepingCapacity: true)
 
-        let groups = ProcessMenuBuilder.groups(from: viewModel.data.snapshot)
+        // 菜单打开时才查保护规则：最多 6 次 libproc 读取，不在每秒采样里付这个钱。
+        let groups = ProcessMenuBuilder.groups(from: viewModel.data.snapshot) { process in
+            ProcessTerminator.refusal(pid: process.pid)
+        }
         for (index, group) in groups.enumerated() {
             if index > 0 { submenu.addItem(.separator()) }
             let header = NSMenuItem(title: group.title, action: nil, keyEquivalent: "")
@@ -723,16 +727,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 continue
             }
             for entry in group.entries {
-                let item = NSMenuItem(
-                    title: entry.title,
-                    action: #selector(openProcessFromMenu(_:)),
-                    keyEquivalent: ""
-                )
-                item.target = self
-                item.toolTip = L10n.t(.processTapHint)
-                item.representedObject = NSNumber(value: menuProcessCache.count)
+                let row = NSMenuItem(title: entry.title, action: nil, keyEquivalent: "")
+                row.toolTip = L10n.t(.processTapHint)
+                row.submenu = processActionsMenu(for: entry, index: menuProcessCache.count)
                 menuProcessCache.append(entry.process)
-                submenu.addItem(item)
+                submenu.addItem(row)
             }
         }
 
@@ -740,20 +739,110 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return item
     }
 
+    /// 单条进程的动作子菜单：详情 / 退出 / 强制退出。
+    /// 菜单项自己控可用性：受保护进程必须禁用退出，不能让 AppKit 按 target 自动放行。
+    private func processActionsMenu(for entry: ProcessMenuEntry, index: Int) -> NSMenu {
+        let actions = NSMenu()
+        actions.autoenablesItems = false
+
+        let inspect = NSMenuItem(title: L10n.t(.menuViewDetails), action: #selector(openProcessFromMenu(_:)), keyEquivalent: "")
+        inspect.target = self
+        inspect.representedObject = NSNumber(value: index)
+        actions.addItem(inspect)
+        actions.addItem(.separator())
+
+        if let refusal = entry.refusal {
+            let reason = NSMenuItem(title: refusal.localizedName, action: nil, keyEquivalent: "")
+            reason.isEnabled = false
+            actions.addItem(reason)
+        }
+
+        let quit = NSMenuItem(title: L10n.t(.quitProcess), action: #selector(quitProcessFromMenu(_:)), keyEquivalent: "")
+        quit.target = self
+        quit.representedObject = NSNumber(value: index)
+        quit.isEnabled = entry.refusal == nil
+        actions.addItem(quit)
+
+        let force = NSMenuItem(title: L10n.t(.forceQuitProcess), action: #selector(forceQuitProcessFromMenu(_:)), keyEquivalent: "")
+        force.target = self
+        force.representedObject = NSNumber(value: index)
+        force.isEnabled = entry.refusal == nil
+        actions.addItem(force)
+
+        return actions
+    }
+
+    /// 菜单项存的是建菜单时的索引；按 PID 取最新读数，进程已消失时回落快照。
+    private func processFromMenu(_ sender: NSMenuItem) -> ProcessStatus? {
+        guard let number = sender.representedObject as? NSNumber else { return nil }
+        let index = number.intValue
+        guard index >= 0, index < menuProcessCache.count else { return nil }
+        let cached = menuProcessCache[index]
+        return (viewModel.data.snapshot.cpuRankedProcesses + viewModel.data.snapshot.processes)
+            .first(where: { $0.pid == cached.pid }) ?? cached
+    }
+
     /// 从菜单打开进程详情。菜单收起后再开模态窗口，别把模态循环卡在菜单跟踪里。
     @objc private func openProcessFromMenu(_ sender: NSMenuItem) {
-        guard let number = sender.representedObject as? NSNumber else { return }
-        let index = number.intValue
-        guard index >= 0, index < menuProcessCache.count else { return }
-        // 菜单打开期间采样可能已刷新：优先用同 PID 的新读数，找不到再用建菜单时的快照。
-        let cached = menuProcessCache[index]
-        let live = (viewModel.data.snapshot.cpuRankedProcesses + viewModel.data.snapshot.processes)
-            .first(where: { $0.pid == cached.pid }) ?? cached
+        guard let live = processFromMenu(sender) else { return }
         DispatchQueue.main.async { [weak self] in
             NSApp.activate()
             ProcessDialogs.showProcess(live) { [weak self] in
                 self?.playSoundEffect()
                 self?.triggerTick()
+            }
+        }
+    }
+
+    /// 菜单里的「退出」：与详情窗同一个 `ProcessTerminator`，发信号前重新核一次 PID 身份。
+    @objc private func quitProcessFromMenu(_ sender: NSMenuItem) {
+        guard let process = processFromMenu(sender) else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.terminateFromMenu(process, by: .quit)
+        }
+    }
+
+    /// 菜单里的「强制退出」：先确认，再走同一终止路径；SIGKILL 不给进程保存机会。
+    @objc private func forceQuitProcessFromMenu(_ sender: NSMenuItem) {
+        guard let process = processFromMenu(sender) else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let alert = NSAlert()
+            alert.messageText = L10n.format(.menuForceQuitTitle, process.name)
+            alert.informativeText = L10n.t(.forceQuitConfirm)
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: L10n.t(.forceQuitNow))
+            alert.addButton(withTitle: L10n.t(.cancel))
+            NSApp.activate()
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+            self.terminateFromMenu(process, by: .force)
+        }
+    }
+
+    private func terminateFromMenu(_ process: ProcessStatus, by signal: TerminationSignal) {
+        switch ProcessTerminator.target(pid: process.pid) {
+        case .failure(let refusal):
+            ProcessDialogs.showMessage(
+                title: L10n.t(.menuQuitFailed),
+                message: refusal.localizedName,
+                isSuccess: false
+            )
+        case .success(let target):
+            Task { @MainActor in
+                // 发信号会阻塞到进程退出或超时（最多 3 秒），离开主线程。
+                let outcome = await Task.detached(priority: .userInitiated) {
+                    ProcessTerminator.terminate(target, by: signal)
+                }.value
+                if outcome.isSuccess {
+                    playSoundEffect()
+                    triggerTick()
+                } else {
+                    ProcessDialogs.showMessage(
+                        title: L10n.t(.menuQuitFailed),
+                        message: outcome.refusal?.localizedName ?? L10n.t(.processStillRunning),
+                        isSuccess: false
+                    )
+                }
             }
         }
     }
