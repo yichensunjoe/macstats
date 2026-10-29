@@ -135,7 +135,7 @@ On first launch a small `CPU · Memory` readout appears in the menu bar and the 
 | GPU | Large utilization + 90 s trend + unified-memory use and core count | `PerformanceStatistics` on `IOAccelerator` (`Device Utilization %`, `In use system memory`), the same source as Activity Monitor's GPU tab |
 | Processes | Top 3 by memory or CPU (top 5 in the expanded panel); click a row to quit | `ri_phys_footprint` and CPU deltas from `proc_pid_rusage` |
 
-A small “Memory / CPU” switch sits at the right of the process card's title. Both lists are per-PID rankings (not the name-aggregated attribution), so a process with high CPU and modest memory shows up here too. Click any row for its executable path, parent, start time, and Quit / Force Quit; system paths, other users' processes and the app itself are refused.
+A small “Memory / CPU” switch sits at the right of the process card's title, and the panel's context menu offers the same choice under “Process ranking”. Both lists are per-PID rankings (not the name-aggregated attribution), so a process with high CPU and modest memory shows up here too. The choice is remembered across launches. Click any row for its executable path, parent, start time, and Quit / Force Quit; system paths, other users' processes and the app itself are refused.
 
 <p align="center">
   <img src="../widget-medium.png" alt="Medium widget: CPU with per-core bars, plus memory, disk, network and energy tiles, with a GPU tile when available" width="620" />

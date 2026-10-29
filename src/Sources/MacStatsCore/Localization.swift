@@ -273,6 +273,7 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case menuQuit
     case menuRefreshNow
     case menuSize
+    case menuProcessRanking
     case menuDuplicateWidget
     case menuPinToDesktop
     case menuAlwaysOnTop
@@ -463,7 +464,7 @@ public final class L10n: @unchecked Sendable {
         .processesCount3: "3 个进程",
         .processesCount5: "5 个进程",
         .processesCount8: "8 个进程",
-        .processesHint: "在标准与详细面板中列出占用最高的进程，卡片标题右侧可切换按内存或 CPU 排序。点开一行可查看详情、退出或强制退出。",
+        .processesHint: "在标准与详细面板中列出占用最高的进程，卡片标题右侧或右键菜单都能切换按内存或 CPU 排序。点开一行可查看详情、退出或强制退出。",
 
         .historySection: "历史与告警",
         .historyRecording: "记录历史",
@@ -598,6 +599,7 @@ public final class L10n: @unchecked Sendable {
         .menuQuit: "退出",
         .menuRefreshNow: "立即刷新",
         .menuSize: "尺寸",
+        .menuProcessRanking: "进程榜",
         .menuDuplicateWidget: "复制一个同样的小组件",
         .menuPinToDesktop: "固定在桌面",
         .menuAlwaysOnTop: "始终置顶",
@@ -722,7 +724,7 @@ public final class L10n: @unchecked Sendable {
         .processesCount3: "3 processes",
         .processesCount5: "5 processes",
         .processesCount8: "8 processes",
-        .processesHint: "Lists top processes in the standard and expanded panels; switch between memory and CPU order at the card header. Click a row to inspect, quit, or force quit.",
+        .processesHint: "Lists top processes in the standard and expanded panels; switch between memory and CPU order at the card header or from the context menu. Click a row to inspect, quit, or force quit.",
 
         .historySection: "History & Alerts",
         .historyRecording: "Record History",
@@ -857,6 +859,7 @@ public final class L10n: @unchecked Sendable {
         .menuQuit: "Quit",
         .menuRefreshNow: "Refresh Now",
         .menuSize: "Size",
+        .menuProcessRanking: "Process ranking",
         .menuDuplicateWidget: "Duplicate Widget",
         .menuPinToDesktop: "Pin to Desktop",
         .menuAlwaysOnTop: "Always on Top",

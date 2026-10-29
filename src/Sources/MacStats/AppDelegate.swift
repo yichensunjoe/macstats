@@ -645,6 +645,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         switchItem.representedObject = id
         menu.addItem(switchItem)
 
+        // 进程榜口径：不必瞄准卡片标题旁的小开关，右键也能切。菜单每次打开时重建，
+        // 勾选状态直接读当前偏好。
+        let rankingItem = NSMenuItem(title: L10n.t(.menuProcessRanking), action: nil, keyEquivalent: "")
+        let rankingMenu = NSMenu()
+        for sort in ProcessSort.allCases {
+            let item = NSMenuItem(
+                title: sort.title,
+                action: #selector(setProcessSortFromMenu(_:)),
+                keyEquivalent: ""
+            )
+            item.target = self
+            item.representedObject = sort.rawValue
+            item.state = sort == processSort ? .on : .off
+            rankingMenu.addItem(item)
+        }
+        rankingItem.submenu = rankingMenu
+        menu.addItem(rankingItem)
+
         let copy = NSMenuItem(title: L10n.t(.menuDuplicateWidget), action: #selector(duplicateWidget(_:)), keyEquivalent: "")
         copy.target = self
         copy.representedObject = id
@@ -675,6 +693,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func refreshNow() { triggerTick() }
+
+    @objc private func setProcessSortFromMenu(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String else { return }
+        setProcessSort(ProcessSort.stored(raw))
+    }
 
     @objc private func hidePrimary() { hidePanel() }
 

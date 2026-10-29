@@ -122,7 +122,7 @@ bash scripts/bundle.sh --archive
 | GPU | 利用率大数字 + 90 秒趋势线 + 显存占用/核心数 | `IOAccelerator` 的 `PerformanceStatistics`（`Device Utilization %`、`In use system memory`），与活动监视器 GPU 页签同源 |
 | 进程 | 内存或 CPU 占用最高的 3 个（详细档 5 个），点开可退出 | `proc_pid_rusage` 的 `ri_phys_footprint` 与 CPU 占用差分 |
 
-进程卡片标题右侧有个「内存 / CPU」小开关，两边都是逐 PID 的排行（不是按名字合并的归因榜），所以 CPU 飙高但内存不大的进程也能在这里找到。点任意一行打开进程信息——可执行路径、父进程、启动时间，以及退出 / 强制退出；系统路径、其他用户的进程和本应用自己会被拦下。
+进程卡片标题右侧有个「内存 / CPU」小开关，面板右键菜单的「进程榜」里也能切；两边都是逐 PID 的排行（不是按名字合并的归因榜），所以 CPU 飙高但内存不大的进程也能在这里找到。选择会记住，重开面板沿用上次的榜。点任意一行打开进程信息——可执行路径、父进程、启动时间，以及退出 / 强制退出；系统路径、其他用户的进程和本应用自己会被拦下。
 
 <p align="center">
   <img src="docs/widget-medium.png" alt="WidgetKit 中尺寸：CPU 主板与内存、磁盘、网络、能耗，有 GPU 时再加一格 GPU" width="620" />
