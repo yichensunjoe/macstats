@@ -490,7 +490,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             model: viewModel,
             onRefresh: { [weak self] in self?.triggerTick() },
             onOpenActivityMonitor: { Self.openActivityMonitor() },
-            onCleanup: { [weak self] in self?.runCleanup() }
+            onCleanup: { [weak self] in self?.runCleanup() },
+            // 点进程行：看详情、退出或强制退出。WidgetKit 扩展没这个权限，
+            // 所以只有宿主应用的面板会传回调。
+            onProcessTap: { [weak self] process in
+                NSApp.activate()
+                ProcessDialogs.showProcess(process) { [weak self] in
+                    self?.playSoundEffect()
+                    self?.triggerTick()
+                }
+            }
         )
     }
 

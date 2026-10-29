@@ -42,6 +42,8 @@ struct WidgetView: View {
     var onRefresh: () -> Void = {}
     var onOpenActivityMonitor: () -> Void = {}
     var onCleanup: () -> Void = {}
+    /// 点进程行时打开详情（退出 / 强制退出）。nil 表示这份渲染不可交互（离屏截图、WidgetKit）。
+    var onProcessTap: ((ProcessStatus) -> Void)?
 
     @State private var hovering = false
     /// 当前打开的峰值详情；nil 表示没有 popover。点空白或再次点击同一个峰值都会回到 nil。
@@ -54,13 +56,15 @@ struct WidgetView: View {
         surface: SurfaceStyle = .material,
         onRefresh: @escaping () -> Void = {},
         onOpenActivityMonitor: @escaping () -> Void = {},
-        onCleanup: @escaping () -> Void = {}
+        onCleanup: @escaping () -> Void = {},
+        onProcessTap: ((ProcessStatus) -> Void)? = nil
     ) {
         self.model = model
         self.surface = surface
         self.onRefresh = onRefresh
         self.onOpenActivityMonitor = onOpenActivityMonitor
         self.onCleanup = onCleanup
+        self.onProcessTap = onProcessTap
     }
 
     init(
@@ -68,13 +72,15 @@ struct WidgetView: View {
         surface: SurfaceStyle = .material,
         onRefresh: @escaping () -> Void = {},
         onOpenActivityMonitor: @escaping () -> Void = {},
-        onCleanup: @escaping () -> Void = {}
+        onCleanup: @escaping () -> Void = {},
+        onProcessTap: ((ProcessStatus) -> Void)? = nil
     ) {
         self.model = WidgetViewModel(data: data)
         self.surface = surface
         self.onRefresh = onRefresh
         self.onOpenActivityMonitor = onOpenActivityMonitor
         self.onCleanup = onCleanup
+        self.onProcessTap = onProcessTap
     }
 
     private var snapshot: MetricSnapshot { data.snapshot }
@@ -602,12 +608,7 @@ struct WidgetView: View {
             let total = max(snapshot.processes.first?.memory ?? 0, 1)
             VStack(spacing: 4) {
                 ForEach(snapshot.processes.prefix(min(layout.processRows, data.topProcessesCount))) { process in
-                    ProcessRow(
-                        name: process.name,
-                        value: "CPU \(PercentFormat.processCPU(process.cpu))  \(ByteFormat.processMemory(process.memory))",
-                        fraction: Double(process.memory) / Double(total),
-                        tint: Theme.memory
-                    )
+                    ProcessLine(process: process, total: total, action: onProcessTap)
                 }
                 if snapshot.processes.isEmpty {
                     Text(L10n.t(.sampling))
@@ -743,6 +744,42 @@ private struct PeakDetailView: View {
         }
         .padding(11)
         .frame(width: 208, alignment: .leading)
+    }
+}
+
+/// 小组件里的进程行：点一下打开详情，可正常退出或强制退出。
+/// 只有宿主面板传入回调时才可点；离屏截图与 WidgetKit 渲染保持纯展示。
+private struct ProcessLine: View {
+    let process: ProcessStatus
+    let total: UInt64
+    let action: ((ProcessStatus) -> Void)?
+
+    @State private var hovered = false
+
+    private var interactive: Bool { action != nil }
+
+    var body: some View {
+        Button {
+            action?(process)
+        } label: {
+            ProcessRow(
+                name: process.name,
+                value: "CPU \(PercentFormat.processCPU(process.cpu))  \(ByteFormat.processMemory(process.memory))",
+                fraction: Double(process.memory) / Double(max(total, 1)),
+                tint: Theme.memory
+            )
+            .padding(.horizontal, 3)
+            .padding(.vertical, 1)
+            .background(
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(interactive && hovered ? Theme.track.opacity(0.75) : .clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!interactive)
+        .onHover { hovered = $0 }
+        .help(interactive ? L10n.t(.processTapHint) : "")
     }
 }
 

@@ -306,6 +306,209 @@ public struct CleanupResult: Sendable {
     public var freedBytes: UInt64
 }
 
+// MARK: - 用户点名的退出 / 强制退出
+
+/// 结束单个进程的方式。与「一键清理」不同：这里由用户在看板上点名，
+/// 因此规则只拦系统进程、其他用户的进程和本应用自己。
+public enum TerminationSignal: String, Sendable, Equatable {
+    /// SIGTERM：请求进程自己收尾后退出，等 `grace` 秒。
+    case quit
+    /// SIGKILL：立即结束，进程没有保存机会。
+    case force
+
+    public var localizedName: String {
+        switch self {
+        case .quit: L10n.shared.resolvedLanguage == .zhHans ? "退出" : "Quit"
+        case .force: L10n.shared.resolvedLanguage == .zhHans ? "强制退出" : "Force quit"
+        }
+    }
+
+    var rawSignal: Int32 {
+        switch self {
+        case .quit: SIGTERM
+        case .force: SIGKILL
+        }
+    }
+}
+
+/// 拒绝结束进程的原因。
+public enum TerminationRefusal: String, Error, Sendable, Equatable, CaseIterable {
+    case notFound
+    case notCurrentUser
+    case selfProcess
+    case zombie
+    case systemProcess
+
+    public var localizedName: String {
+        if L10n.shared.resolvedLanguage == .zhHans {
+            return switch self {
+            case .notFound: "这个进程已经退出了"
+            case .notCurrentUser: "它属于其他用户，不能结束"
+            case .selfProcess: "这是 MacStats 自己"
+            case .zombie: "僵尸进程，只能由父进程回收"
+            case .systemProcess: "系统进程受保护，不会去动它"
+            }
+        }
+        return switch self {
+        case .notFound: "This process has already exited"
+        case .notCurrentUser: "It belongs to another user"
+        case .selfProcess: "This is MacStats itself"
+        case .zombie: "Zombie process; only its parent can reap it"
+        case .systemProcess: "System processes are protected"
+        }
+    }
+}
+
+/// 规则判定所需的进程事实（与 libproc 解耦，便于单测）。
+public struct TerminationFacts: Sendable, Equatable {
+    public var pid: Int32
+    public var name: String
+    public var path: String
+    public var uid: UInt32
+    public var isZombie: Bool
+
+    public init(pid: Int32, name: String, path: String, uid: UInt32, isZombie: Bool = false) {
+        self.pid = pid
+        self.name = name
+        self.path = path
+        self.uid = uid
+        self.isZombie = isZombie
+    }
+}
+
+/// 用户点名终止时的安全规则。
+///
+/// 刻意不拦 `.app/` 和终端进程：活动监视器允许用户退出任何自己的 App，
+/// 这也是「减少打开活动监视器」的关键；系统路径、系统界面进程、别人的进程仍然一律拦住。
+public struct TerminationPolicy: Sendable, Equatable {
+    public var protectedPathPrefixes: [String]
+    public var protectedNames: Set<String>
+
+    public init(
+        protectedPathPrefixes: [String] = CleanupRules.defaultProtectedPaths,
+        protectedNames: Set<String> = CleanupRules.defaultProtectedNames
+    ) {
+        self.protectedPathPrefixes = protectedPathPrefixes
+        self.protectedNames = protectedNames
+    }
+
+    /// 纯规则判定：返回 nil 表示可以结束。
+    public func refusal(for facts: TerminationFacts, currentUID: UInt32, selfPID: Int32) -> TerminationRefusal? {
+        guard facts.pid > 0 else { return .notFound }
+        if facts.isZombie { return .notFound }
+        if facts.pid == selfPID { return .selfProcess }
+        if facts.uid != currentUID { return .notCurrentUser }
+        if facts.name.isEmpty && facts.path.isEmpty { return .systemProcess }
+        if protectedNames.contains(facts.name) { return .systemProcess }
+        if protectedPathPrefixes.contains(where: { facts.path.hasPrefix($0) }) { return .systemProcess }
+        return nil
+    }
+}
+
+/// 一次终止的目标。启动时间与路径在发信号前复核，避免 PID 被复用后误杀。
+public struct TerminateTarget: Sendable, Equatable {
+    public var pid: Int32
+    public var name: String
+    public var path: String
+    public var startedAt: Date?
+
+    public init(pid: Int32, name: String, path: String = "", startedAt: Date? = nil) {
+        self.pid = pid
+        self.name = name
+        self.path = path
+        self.startedAt = startedAt
+    }
+}
+
+/// 终止结果。`refusal` 非空表示信号根本没发出去。
+public struct TerminationOutcome: Sendable, Equatable {
+    public var target: TerminateTarget
+    public var signal: TerminationSignal
+    public var refusal: TerminationRefusal?
+    public var exited: Bool
+
+    public var isSuccess: Bool { refusal == nil && exited }
+}
+
+/// 进程详情：详情弹窗与身份复核共用，全部来自 libproc，不涉及私有接口。
+public struct ProcessDetail: Sendable, Equatable {
+    public var pid: Int32
+    public var name: String
+    /// 进程自报的名字（`argv[0]`），可能与可执行文件名不同。
+    public var title: String
+    public var path: String
+    public var parentPID: Int32
+    public var uid: UInt32
+    public var startedAt: Date
+    public var memoryBytes: UInt64
+    public var isZombie: Bool
+
+    public var facts: TerminationFacts {
+        TerminationFacts(pid: pid, name: name, path: path, uid: uid, isZombie: isZombie)
+    }
+
+    public var ageSeconds: TimeInterval {
+        max(0, Date().timeIntervalSince(startedAt))
+    }
+
+    public var target: TerminateTarget {
+        TerminateTarget(pid: pid, name: name, path: path, startedAt: startedAt)
+    }
+}
+
+/// 结束单个进程。规则判定与信号发送都在这里，界面只负责调用。
+public enum ProcessTerminator {
+    public static func refusal(for detail: ProcessDetail, policy: TerminationPolicy = TerminationPolicy()) -> TerminationRefusal? {
+        policy.refusal(for: detail.facts, currentUID: getuid(), selfPID: getpid())
+    }
+
+    public static func refusal(pid: Int32, policy: TerminationPolicy = TerminationPolicy()) -> TerminationRefusal? {
+        guard let detail = ProcessInventory.detail(pid: pid) else { return .notFound }
+        return refusal(for: detail, policy: policy)
+    }
+
+    /// 发信号前重新读一次进程表；进程已退出或 PID 被复用时返回 nil。
+    public static func target(pid: Int32) -> Result<TerminateTarget, TerminationRefusal> {
+        guard let detail = ProcessInventory.detail(pid: pid) else { return .failure(.notFound) }
+        if let reason = refusal(for: detail) { return .failure(reason) }
+        return .success(detail.target)
+    }
+
+    /// 发送信号并等待进程消失。`.force` 用 SIGKILL，通常立即返回；
+    /// `.quit` 最多等 `grace` 秒，超时就把进程原样留着交给界面提示。
+    @discardableResult
+    public static func terminate(
+        _ target: TerminateTarget,
+        by signal: TerminationSignal,
+        grace: TimeInterval = 3,
+        policy: TerminationPolicy = TerminationPolicy()
+    ) -> TerminationOutcome {
+        if let reason = refusal(pid: target.pid, policy: policy) {
+            return TerminationOutcome(target: target, signal: signal, refusal: reason, exited: false)
+        }
+        guard ProcessInventory.matches(pid: target.pid, startedAt: target.startedAt, path: target.path) else {
+            return TerminationOutcome(target: target, signal: signal, refusal: .notFound, exited: false)
+        }
+
+        guard kill(target.pid, signal.rawSignal) == 0 else {
+            let reason: TerminationRefusal = errno == EPERM ? .notCurrentUser : .notFound
+            return TerminationOutcome(target: target, signal: signal, refusal: reason, exited: false)
+        }
+
+        let timeout = max(grace, signal == .force ? 1.5 : 0)
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            usleep(50_000)
+            if !ProcessInventory.matches(pid: target.pid, startedAt: target.startedAt, path: target.path) {
+                return TerminationOutcome(target: target, signal: signal, refusal: nil, exited: true)
+            }
+        }
+        // 最后一跳：有些进程在 deadline 边缘退出。
+        let exited = !ProcessInventory.matches(pid: target.pid, startedAt: target.startedAt, path: target.path)
+        return TerminationOutcome(target: target, signal: signal, refusal: nil, exited: exited)
+    }
+}
+
 /// 进程表快照。一次扫描读全部 PID 的 bsdinfo / 路径 / rusage。
 public enum ProcessInventory {
     /// `SZOMB`：进程已退出，等待父进程回收。
@@ -407,14 +610,19 @@ public enum ProcessInventory {
     /// 校验待清理的候选进程是否仍在运行，且没有被其他进程复用 PID。
     /// 检查 PID 是否存在、非僵尸；若提供启动时间或路径，严格核验（秒级比对启动时间，完整比对路径）。
     public static func matches(_ candidate: CleanupCandidate) -> Bool {
-        guard candidate.pid > 0 else { return false }
-        guard candidate.startedAt != nil || !candidate.path.isEmpty else { return false }
+        matches(pid: candidate.pid, startedAt: candidate.startedAt, path: candidate.path)
+    }
+
+    /// 同上，供「退出单个进程」复用同一套身份复核。
+    public static func matches(pid: Int32, startedAt: Date?, path: String) -> Bool {
+        guard pid > 0 else { return false }
+        guard startedAt != nil || !path.isEmpty else { return false }
         var info = proc_bsdinfo()
         let size = Int32(MemoryLayout<proc_bsdinfo>.size)
-        guard proc_pidinfo(candidate.pid, PROC_PIDTBSDINFO, 0, &info, size) == size else { return false }
+        guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size else { return false }
         guard info.pbi_status != zombieStatus else { return false }
 
-        if let expectedStartedAt = candidate.startedAt {
+        if let expectedStartedAt = startedAt {
             let actualTvSec = info.pbi_start_tvsec
             let expectedSec = Int64(expectedStartedAt.timeIntervalSince1970)
             guard expectedSec >= 0, actualTvSec == UInt64(expectedSec) else {
@@ -422,13 +630,37 @@ public enum ProcessInventory {
             }
         }
 
-        if !candidate.path.isEmpty {
-            guard let currentPath = executablePath(pid: candidate.pid), currentPath == candidate.path else {
+        if !path.isEmpty {
+            guard let currentPath = executablePath(pid: pid), currentPath == path else {
                 return false
             }
         }
 
         return true
+    }
+
+    /// 单个进程的详情。只读一次 bsdinfo、路径与 rusage，够详情弹窗展示。
+    public static func detail(pid: Int32) -> ProcessDetail? {
+        guard pid > 0 else { return nil }
+        var info = proc_bsdinfo()
+        let size = Int32(MemoryLayout<proc_bsdinfo>.size)
+        guard proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size) == size else { return nil }
+        let path = executablePath(pid: pid) ?? ""
+        let startedAt = Date(
+            timeIntervalSince1970: TimeInterval(info.pbi_start_tvsec)
+                + TimeInterval(info.pbi_start_tvusec) / 1_000_000
+        )
+        return ProcessDetail(
+            pid: pid,
+            name: displayName(path: path, info: info, pid: pid),
+            title: processTitle(pid: pid) ?? "",
+            path: path,
+            parentPID: Int32(info.pbi_ppid),
+            uid: info.pbi_uid,
+            startedAt: startedAt,
+            memoryBytes: rusage(pid: pid)?.footprintBytes ?? 0,
+            isZombie: info.pbi_status == zombieStatus
+        )
     }
 
     private static func displayName(path: String, info: proc_bsdinfo, pid: Int32) -> String {

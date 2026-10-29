@@ -23,6 +23,18 @@ enum ProcessDialogs {
         _ = present(NothingToCleanView(scanned: scanned, skipped: skipped), size: CGSize(width: 480, height: 286), title: L10n.t(.cleanIdleProcesses))
     }
 
+    /// 单个进程的详情与操作。对应「在活动监视器里双击一行」：
+    /// 看信息、正常退出，或二次确认后强制退出。
+    static func showProcess(_ process: ProcessStatus, onTerminated: @escaping () -> Void) {
+        let detail = ProcessInventory.detail(pid: process.pid)
+        let refusal = detail.map { ProcessTerminator.refusal(for: $0) } ?? .notFound
+        _ = present(
+            ProcessActionView(process: process, detail: detail, refusal: refusal, onTerminated: onTerminated),
+            size: CGSize(width: 560, height: refusal == nil ? 486 : 424),
+            title: L10n.t(.processInfo)
+        )
+    }
+
     static func showMessage(title: String, message: String, details: String? = nil, isSuccess: Bool = true) {
         _ = present(
             MessageView(title: title, message: message, details: details, isSuccess: isSuccess),
@@ -370,5 +382,219 @@ private struct MessageView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.regularMaterial)
+    }
+}
+
+// MARK: - 单个进程：详情与退出
+
+/// 像活动监视器双击一行之后那样：先看它是什么，再决定正常退出还是强制退出。
+/// 强制退出在同一个窗口里二次确认，不再叠一层模态。
+private struct ProcessActionView: View {
+    let process: ProcessStatus
+    let detail: ProcessDetail?
+    let refusal: TerminationRefusal?
+    let onTerminated: () -> Void
+
+    @State private var working = false
+    @State private var confirmingForce = false
+    @State private var notice: String?
+
+    private var canAct: Bool { refusal == nil && !working }
+
+    private var explanation: ProcessExplanation {
+        ProcessGlossary.explain(
+            name: detail?.name ?? process.name,
+            title: detail?.title ?? "",
+            path: detail?.path ?? "",
+            language: L10n.shared.resolvedLanguage
+        )
+    }
+
+    private var displayName: String {
+        ProcessGlossary.displayName(name: detail?.name ?? process.name, title: detail?.title ?? "")
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+            Divider()
+            facts
+            Divider()
+            explanationSection
+            if let refusal {
+                banner(refusal.localizedName, systemImage: "lock.shield", tint: .orange)
+            }
+            if let notice {
+                banner(notice, systemImage: "exclamationmark.triangle.fill", tint: .orange)
+            }
+            Spacer(minLength: 0)
+            Divider()
+            footer
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.regularMaterial)
+        .onExitCommand { if !working { NSApp.stopModal(withCode: .cancel) } }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "list.bullet.rectangle")
+                .font(.system(size: 30))
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(displayName)
+                    .font(.system(size: 16, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                HStack(spacing: 8) {
+                    Text("PID \(process.pid)")
+                    if let detail {
+                        Text(L10n.format(.processUptime, DurationFormat.uptime(detail.ageSeconds)))
+                    }
+                }
+                .font(.system(size: 11).monospacedDigit())
+                .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(18)
+    }
+
+    private var facts: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 18) {
+                metric(label: L10n.t(.cpu), value: PercentFormat.processCPU(process.cpu))
+                metric(label: L10n.t(.memory), value: ByteFormat.processMemory(detail?.memoryBytes ?? process.memory))
+            }
+            if let detail, !detail.path.isEmpty {
+                factRow(L10n.t(.processPath), detail.path)
+            }
+            if let detail, detail.parentPID > 0 {
+                let parent = ProcessInventory.detail(pid: detail.parentPID)
+                factRow(L10n.t(.processParent), "\(parent?.name ?? "PID") (\(detail.parentPID))")
+            }
+            if let detail {
+                factRow(
+                    L10n.t(.processStartedAt),
+                    detail.startedAt.formatted(date: .abbreviated, time: .shortened)
+                )
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 13)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func metric(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(.tertiary)
+            Text(value)
+                .font(.system(size: 14, weight: .semibold).monospacedDigit())
+        }
+        .frame(minWidth: 110, alignment: .leading)
+    }
+
+    private func factRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.tertiary)
+                .frame(width: 58, alignment: .leading)
+            Text(value)
+                .font(.system(size: 10.5))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .textSelection(.enabled)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var explanationSection: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(explanation.summary)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(L10n.t(.impactPrefix) + explanation.impact)
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func banner(_ text: String, systemImage: String, tint: Color) -> some View {
+        HStack(alignment: .top, spacing: 7) {
+            Image(systemName: systemImage)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(tint)
+                .padding(.top, 1)
+            Text(text)
+                .font(.system(size: 10.5))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 18)
+        .padding(.bottom, 10)
+    }
+
+    private var footer: some View {
+        HStack(spacing: 10) {
+            if working {
+                ProgressView().controlSize(.small)
+            }
+            if confirmingForce {
+                Text(L10n.t(.forceQuitConfirm))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.red)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                Button(L10n.t(.cancel)) { confirmingForce = false }
+                    .keyboardShortcut(.cancelAction)
+                Button(L10n.t(.forceQuitNow)) { run(.force) }
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+            } else {
+                Spacer(minLength: 0)
+                Button(L10n.t(.close)) { NSApp.stopModal(withCode: .cancel) }
+                    .keyboardShortcut(.cancelAction)
+                Button(L10n.t(.quitProcess)) { run(.quit) }
+                    .disabled(!canAct)
+                Button(L10n.t(.forceQuitProcess)) { confirmingForce = true }
+                    .disabled(!canAct)
+                    .tint(.red)
+            }
+        }
+        .padding(16)
+    }
+
+    /// 发信号会阻塞到进程退出或超时（最多 3 秒），所以离开主线程执行。
+    private func run(_ signal: TerminationSignal) {
+        guard canAct else { return }
+        confirmingForce = false
+        notice = nil
+        working = true
+        let target = detail?.target ?? TerminateTarget(pid: process.pid, name: process.name)
+        Task { @MainActor in
+            let outcome = await Task.detached(priority: .userInitiated) {
+                ProcessTerminator.terminate(target, by: signal)
+            }.value
+            working = false
+            if outcome.isSuccess {
+                onTerminated()
+                NSApp.stopModal(withCode: .OK)
+            } else if let reason = outcome.refusal {
+                notice = reason.localizedName
+            } else {
+                notice = L10n.t(.processStillRunning)
+            }
+        }
     }
 }

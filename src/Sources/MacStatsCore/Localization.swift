@@ -319,6 +319,20 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case statusToolTip
     case impactPrefix
 
+    // 单个进程：详情、退出与强制退出
+    case processInfo
+    case processTapHint
+    case processPath
+    case processParent
+    case processStartedAt
+    case processUptime
+    case quitProcess
+    case forceQuitProcess
+    case forceQuitConfirm
+    case forceQuitNow
+    case processStillRunning
+    case close
+
     // Units
     case secondsUnit
     case minutesUnit
@@ -624,6 +638,19 @@ public final class L10n: @unchecked Sendable {
         .statusToolTip: "CPU %@ · 内存 %@ · 能耗 %@",
         .impactPrefix: "结束它会怎样：",
 
+        .processInfo: "进程信息",
+        .processTapHint: "点开查看详情，可退出或强制退出",
+        .processPath: "路径",
+        .processParent: "父进程",
+        .processStartedAt: "启动时间",
+        .processUptime: "已运行 %@",
+        .quitProcess: "退出",
+        .forceQuitProcess: "强制退出…",
+        .forceQuitConfirm: "强制退出会立即结束它，没保存的内容会丢失。",
+        .forceQuitNow: "强制退出",
+        .processStillRunning: "它没有退出，可能正在保存数据；可以再试一次，或强制退出。",
+        .close: "关闭",
+
         .secondsUnit: "%@ 秒",
         .minutesUnit: "%d 分钟"
     ]
@@ -866,6 +893,19 @@ public final class L10n: @unchecked Sendable {
         .loginItemErrorMessage: "Please move the app to the Applications folder and try again.",
         .statusToolTip: "CPU %@ · Memory %@ · Energy %@",
         .impactPrefix: "Impact: ",
+
+        .processInfo: "Process Info",
+        .processTapHint: "Click for details; quit or force quit",
+        .processPath: "Path",
+        .processParent: "Parent",
+        .processStartedAt: "Started",
+        .processUptime: "Uptime %@",
+        .quitProcess: "Quit",
+        .forceQuitProcess: "Force Quit…",
+        .forceQuitConfirm: "Force quitting ends it immediately; unsaved work will be lost.",
+        .forceQuitNow: "Force Quit",
+        .processStillRunning: "It didn't exit and may be saving data; try again or force quit.",
+        .close: "Close",
 
         .secondsUnit: "%@ s",
         .minutesUnit: "%d min"
