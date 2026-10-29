@@ -119,6 +119,7 @@ bash scripts/bundle.sh --archive
 On first launch a small `CPU · Memory` readout appears in the menu bar and the panel shows up on the desktop.
 
 - Left-click the menu bar item to show or hide the panel
+- Right-click the menu bar item for process ranking (memory / CPU), the top three by CPU and by memory (click one for details, Quit or Force Quit), and the rest of the panel commands
 - Right-click the panel for: always on top, pin to desktop, click-through, refresh interval (0.5 / 1 / 2 / 5 s), new instance, one-click cleanup of idle background processes
 - Drag empty space to move it, drag the bottom-right grip to resize; the layout switches between Minimal / Compact / Standard / Detailed to fit
 - Preferences are stored in the app's `com.macstats.app` preference domain, so position and size survive a relaunch
@@ -135,7 +136,7 @@ On first launch a small `CPU · Memory` readout appears in the menu bar and the 
 | GPU | Large utilization + 90 s trend + unified-memory use and core count | `PerformanceStatistics` on `IOAccelerator` (`Device Utilization %`, `In use system memory`), the same source as Activity Monitor's GPU tab |
 | Processes | Top 3 by memory or CPU (top 5 in the expanded panel); click a row to quit | `ri_phys_footprint` and CPU deltas from `proc_pid_rusage` |
 
-A small “Memory / CPU” switch sits at the right of the process card's title, and the panel's context menu offers the same choice under “Process ranking”; the menu bar icon's menu carries the same entry, so it works even when other windows cover the panel. Both lists are per-PID rankings (not the name-aggregated attribution), so a process with high CPU and modest memory shows up here too. The choice is remembered across launches. Click any row for its executable path, parent, start time, and Quit / Force Quit; system paths, other users' processes and the app itself are refused.
+A small “Memory / CPU” switch sits at the right of the process card's title, and the panel's context menu offers the same choice under “Process ranking”; the menu bar icon's menu carries the same entry, so it works even when other windows cover the panel. Both lists are per-PID rankings (not the name-aggregated attribution), so a process with high CPU and modest memory shows up here too. The choice is remembered across launches. The menu bar menu also lists the top three by CPU and by memory under “Top 3 Processes”, so you can open a process's details without bringing the panel back first. Click any row for its executable path, parent, start time, and Quit / Force Quit; system paths, other users' processes and the app itself are refused.
 
 <p align="center">
   <img src="../widget-medium.png" alt="Medium widget: CPU with per-core bars, plus memory, disk, network and energy tiles, with a GPU tile when available" width="620" />

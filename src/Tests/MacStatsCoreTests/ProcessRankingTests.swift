@@ -311,4 +311,64 @@ final class ProcessRankingTests: XCTestCase {
             XCTAssertEqual(cpuList.first?.name, topCPU.name, "逐 PID 榜首应与聚合归因的元凶一致")
         }
     }
+
+    // MARK: - 菜单栏「占用前三」
+
+    /// 两段榜各按自己的口径排：内存第一名不是 CPU 第一名时，两张榜必须给出不同的人。
+    func testProcessMenuGroupsRankEachMetricSeparately() {
+        var snapshot = MetricSnapshot.empty
+        snapshot.processes = [
+            process(pid: 1, name: "MemHog", cpu: 0.01, memory: 5_368_709_120),
+            process(pid: 2, name: "CPUHog", cpu: 1.25, memory: 10_485_760),
+            process(pid: 3, name: "Mid", cpu: 0.3, memory: 1_073_741_824),
+            process(pid: 4, name: "Low", cpu: 0.1, memory: 524_288)
+        ]
+        snapshot.cpuProcesses = ProcessRanking.topByCPU(snapshot.processes, limit: 4)
+
+        let groups = ProcessMenuBuilder.groups(from: snapshot)
+        XCTAssertEqual(groups.map(\.sort), [.cpu, .memory])
+        XCTAssertEqual(groups[0].entries.map(\.process.pid), [2, 3, 4])
+        XCTAssertEqual(groups[1].entries.map(\.process.pid), [1, 3, 2])
+    }
+
+    /// 段标题跟着语言走，数值按榜单口径格式化；两项拼在一条菜单标题里。
+    func testProcessMenuGroupsUseLocalizedHeadersAndFormattedValues() {
+        defer { L10n.shared.setLanguage(.system) }
+        var snapshot = MetricSnapshot.empty
+        snapshot.processes = [process(pid: 9, name: "Finder", cpu: 0.425, memory: 805_306_368)]
+        snapshot.cpuProcesses = snapshot.processes
+
+        L10n.shared.setLanguage(.zhHans)
+        let zh = ProcessMenuBuilder.groups(from: snapshot)
+        XCTAssertEqual(zh[0].title, "CPU 前三")
+        XCTAssertEqual(zh[1].title, "内存 前三")
+        XCTAssertEqual(zh[0].entries[0].title, "Finder  —  42.5%")
+        XCTAssertEqual(zh[1].entries[0].title, "Finder  —  768.0 MB")
+
+        L10n.shared.setLanguage(.en)
+        let en = ProcessMenuBuilder.groups(from: snapshot)
+        XCTAssertEqual(en[0].title, "Top 3 by CPU")
+        XCTAssertEqual(en[1].title, "Top 3 by Memory")
+    }
+
+    /// 采样刚启动、进程表还空时，两段标题照旧存在但都不出条目，菜单据此显示「采样中…」。
+    func testProcessMenuGroupsAreEmptyBeforeFirstSample() {
+        let groups = ProcessMenuBuilder.groups(from: .empty)
+        XCTAssertEqual(groups.map(\.sort), [.cpu, .memory])
+        XCTAssertTrue(groups.allSatisfy { $0.entries.isEmpty })
+    }
+
+    /// 默认每段三条；调用方要更少时按 limit 收，不会多出条目。
+    func testProcessMenuGroupsCapAtLimit() {
+        var snapshot = MetricSnapshot.empty
+        snapshot.processes = (0..<6).map {
+            process(pid: Int32($0), name: "p\($0)", cpu: Double($0) / 10, memory: UInt64($0 + 1) * 1_048_576)
+        }
+        snapshot.cpuProcesses = ProcessRanking.topByCPU(snapshot.processes, limit: 6)
+
+        XCTAssertEqual(ProcessMenuBuilder.groups(from: snapshot)[0].entries.count, 3)
+        XCTAssertEqual(ProcessMenuBuilder.groups(from: snapshot)[1].entries.count, 3)
+        XCTAssertEqual(ProcessMenuBuilder.groups(from: snapshot, limit: 2)[1].entries.map(\.process.pid), [5, 4])
+        XCTAssertTrue(ProcessMenuBuilder.groups(from: snapshot, limit: 0).allSatisfy { $0.entries.isEmpty })
+    }
 }

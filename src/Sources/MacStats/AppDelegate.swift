@@ -106,6 +106,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private var visibleItem: NSMenuItem?
     private var removeAllItem: NSMenuItem?
+    /// 菜单栏「占用前三」里各项对应的进程。菜单每次弹出时重建，索引即 representedObject。
+    private var menuProcessCache: [ProcessStatus] = []
 
     // 设置窗口：状态镜像在 SettingsModel 里，窗口只在需要时创建。
     private lazy var settingsModel = SettingsModel(app: self)
@@ -337,6 +339,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         // 面板被窗口盖住时右键落不到，菜单栏这里也能切；两边共用同一个子菜单构造。
         menu.addItem(processRankingMenuItem())
+        // 面板被挡住时，连卡片上的进程行也点不到；菜单栏直接给出两张榜的前三名。
+        menu.addItem(topProcessesMenuItem())
 
         let addItem = NSMenuItem(title: L10n.t(.menuAddWidget), action: nil, keyEquivalent: "")
         let addMenu = NSMenu()
@@ -696,6 +700,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         item.submenu = submenu
         return item
+    }
+
+    /// 「占用前三」子菜单：CPU 与内存各取三名，点一条就看详情（详情里可退出或强制退出）。
+    /// 之所以不在主菜单里平铺：六条动态行会把常用项挤下去，子菜单里仍是一次悬停。
+    private func topProcessesMenuItem() -> NSMenuItem {
+        let item = NSMenuItem(title: L10n.t(.menuTopProcesses), action: nil, keyEquivalent: "")
+        let submenu = NSMenu()
+        menuProcessCache.removeAll(keepingCapacity: true)
+
+        let groups = ProcessMenuBuilder.groups(from: viewModel.data.snapshot)
+        for (index, group) in groups.enumerated() {
+            if index > 0 { submenu.addItem(.separator()) }
+            let header = NSMenuItem(title: group.title, action: nil, keyEquivalent: "")
+            header.isEnabled = false
+            submenu.addItem(header)
+
+            guard !group.entries.isEmpty else {
+                let waiting = NSMenuItem(title: L10n.t(.sampling), action: nil, keyEquivalent: "")
+                waiting.isEnabled = false
+                submenu.addItem(waiting)
+                continue
+            }
+            for entry in group.entries {
+                let item = NSMenuItem(
+                    title: entry.title,
+                    action: #selector(openProcessFromMenu(_:)),
+                    keyEquivalent: ""
+                )
+                item.target = self
+                item.toolTip = L10n.t(.processTapHint)
+                item.representedObject = NSNumber(value: menuProcessCache.count)
+                menuProcessCache.append(entry.process)
+                submenu.addItem(item)
+            }
+        }
+
+        item.submenu = submenu
+        return item
+    }
+
+    /// 从菜单打开进程详情。菜单收起后再开模态窗口，别把模态循环卡在菜单跟踪里。
+    @objc private func openProcessFromMenu(_ sender: NSMenuItem) {
+        guard let number = sender.representedObject as? NSNumber else { return }
+        let index = number.intValue
+        guard index >= 0, index < menuProcessCache.count else { return }
+        // 菜单打开期间采样可能已刷新：优先用同 PID 的新读数，找不到再用建菜单时的快照。
+        let cached = menuProcessCache[index]
+        let live = (viewModel.data.snapshot.cpuRankedProcesses + viewModel.data.snapshot.processes)
+            .first(where: { $0.pid == cached.pid }) ?? cached
+        DispatchQueue.main.async { [weak self] in
+            NSApp.activate()
+            ProcessDialogs.showProcess(live) { [weak self] in
+                self?.playSoundEffect()
+                self?.triggerTick()
+            }
+        }
     }
 
     @objc private func refreshNow() { triggerTick() }

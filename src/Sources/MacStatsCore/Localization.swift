@@ -274,6 +274,8 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case menuRefreshNow
     case menuSize
     case menuProcessRanking
+    case menuTopProcesses
+    case menuTopByMetric
     case menuDuplicateWidget
     case menuPinToDesktop
     case menuAlwaysOnTop
@@ -600,6 +602,8 @@ public final class L10n: @unchecked Sendable {
         .menuRefreshNow: "立即刷新",
         .menuSize: "尺寸",
         .menuProcessRanking: "进程榜",
+        .menuTopProcesses: "占用前三",
+        .menuTopByMetric: "%@ 前三",
         .menuDuplicateWidget: "复制一个同样的小组件",
         .menuPinToDesktop: "固定在桌面",
         .menuAlwaysOnTop: "始终置顶",
@@ -860,6 +864,8 @@ public final class L10n: @unchecked Sendable {
         .menuRefreshNow: "Refresh Now",
         .menuSize: "Size",
         .menuProcessRanking: "Process ranking",
+        .menuTopProcesses: "Top 3 Processes",
+        .menuTopByMetric: "Top 3 by %@",
         .menuDuplicateWidget: "Duplicate Widget",
         .menuPinToDesktop: "Pin to Desktop",
         .menuAlwaysOnTop: "Always on Top",

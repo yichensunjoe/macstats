@@ -28,6 +28,58 @@ public enum ProcessSort: String, CaseIterable, Sendable {
     }
 }
 
+/// 菜单栏「占用前三」的一条：进程本身 + 拼好的标题。
+/// 标题在这里定，菜单与测试看同一份文案；AppKit 只负责塞进 NSMenuItem。
+public struct ProcessMenuEntry: Equatable, Sendable {
+    public var process: ProcessStatus
+    public var title: String
+
+    public init(process: ProcessStatus, title: String) {
+        self.process = process
+        self.title = title
+    }
+}
+
+/// 一个口径的菜单段：段标题（如「CPU 前三」）与前三名。
+public struct ProcessMenuGroup: Equatable, Sendable {
+    public var sort: ProcessSort
+    public var title: String
+    /// 采样还没就绪时为空，菜单据此显示「采样中…」。
+    public var entries: [ProcessMenuEntry]
+
+    public init(sort: ProcessSort, title: String, entries: [ProcessMenuEntry]) {
+        self.sort = sort
+        self.title = title
+        self.entries = entries
+    }
+}
+
+/// 菜单栏「占用前三」的数据与文案。
+/// CPU 在前、内存在后：面板被挡住时两张榜都要能看，不能只给当前排序的一张；
+/// 取数用采样层在按内存截断之前算好的 `cpuProcesses`，否则高 CPU、低内存的进程永远进不来。
+public enum ProcessMenuBuilder {
+    public static func groups(from snapshot: MetricSnapshot, limit: Int = 3) -> [ProcessMenuGroup] {
+        let capped = max(0, limit)
+        return [ProcessSort.cpu, .memory].map { sort in
+            // 不依赖调用方已排好：旧快照或手动构造的快照可能乱序，菜单不能跟着乱。
+            let metric: AttributionMetric = sort == .cpu ? .cpu : .memory
+            let source = sort == .cpu ? snapshot.cpuRankedProcesses : snapshot.processes
+            let processes = ProcessRanking.ranked(source, by: metric, limit: capped)
+            let entries = processes.map { process in
+                let value = sort == .cpu
+                    ? PercentFormat.processCPU(process.cpu)
+                    : ByteFormat.processMemory(process.memory)
+                return ProcessMenuEntry(process: process, title: "\(process.name)  —  \(value)")
+            }
+            return ProcessMenuGroup(
+                sort: sort,
+                title: L10n.format(.menuTopByMetric, sort.title),
+                entries: entries
+            )
+        }
+    }
+}
+
 /// 进程排序纯函数：不采样、不碰 I/O，便于单测。
 ///
 /// 采样层会把进程列表按内存截断到 `processLimit`；CPU 归因必须在截断**之前**
