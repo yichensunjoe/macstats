@@ -303,6 +303,9 @@ public struct MetricSnapshot: Codable, Sendable, Equatable {
     public var network: NetworkStatus
     /// 按内存占用降序，最多 `processLimit` 条。
     public var processes: [ProcessStatus]
+    /// 按 CPU 占用降序、逐 PID 的明细，最多 `processLimit` 条，同样在按内存截断之前取。
+    /// 面板切到 CPU 榜后要能直接点开这些进程；Optional 是为了旧 JSON 仍能解码。
+    public var cpuProcesses: [ProcessStatus]?
     /// GPU 读数；老版本写下的快照没有这个字段，解码为 nil。
     public var gpu: GPUStatus?
     /// 按 CPU 排序、已按名字聚合的 top N（在按内存截断之前算），只用于归因。
@@ -319,6 +322,7 @@ public struct MetricSnapshot: Codable, Sendable, Equatable {
         disk: DiskStatus,
         network: NetworkStatus,
         processes: [ProcessStatus],
+        cpuProcesses: [ProcessStatus]? = nil,
         gpu: GPUStatus? = nil,
         topCPUProcesses: [ProcessAttribution]? = nil
     ) {
@@ -331,12 +335,18 @@ public struct MetricSnapshot: Codable, Sendable, Equatable {
         self.disk = disk
         self.network = network
         self.processes = processes
+        self.cpuProcesses = cpuProcesses
         self.gpu = gpu
         self.topCPUProcesses = topCPUProcesses
     }
 
     /// 读取便利：旧快照/未采进程时为空数组。不参与 Codable。
     public var topCPU: [ProcessAttribution] { topCPUProcesses ?? [] }
+
+    /// 读取便利：旧快照没有 CPU 明细时回退到内存榜再排一次（至少能看，只是候选不全）。
+    public var cpuRankedProcesses: [ProcessStatus] {
+        cpuProcesses ?? ProcessRanking.topByCPU(processes, limit: processes.count)
+    }
 
     /// 速率类指标在一个滑动窗口内的均值；内存是瞬时量，不参与平均。
     public func applying(_ window: WindowAverages) -> MetricSnapshot {

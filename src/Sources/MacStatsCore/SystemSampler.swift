@@ -48,6 +48,7 @@ public final class SystemSampler: @unchecked Sendable {
     // 进程扫描按 `config.processInterval` 节流，两次扫描之间直接复用上次结果。
     private var lastProcessScan: UInt64?
     private var cachedProcesses: [ProcessStatus] = []
+    private var cachedCPUProcesses: [ProcessStatus] = []
     private var cachedEnergy: EnergyStatus = .zero
     // top CPU 在按内存截断前算，缓存路径必须一起带出，否则节流期间归因会闪回空。
     private var cachedTopCPU: [ProcessAttribution] = []
@@ -102,7 +103,11 @@ public final class SystemSampler: @unchecked Sendable {
         let disk = sampleDisk(elapsed: elapsed, now: now)
         let network = sampleNetwork(elapsed: elapsed)
         let shouldIncludeProcesses = includeProcesses ?? config.includeProcesses
-        let (processes, energy, topCPU) = sampleProcessesIfDue(now: now, elapsed: elapsed, includeProcesses: shouldIncludeProcesses)
+        let processes: [ProcessStatus], cpuProcesses: [ProcessStatus]
+        let energy: EnergyStatus, topCPU: [ProcessAttribution]
+        (processes, cpuProcesses, energy, topCPU) = sampleProcessesIfDue(
+            now: now, elapsed: elapsed, includeProcesses: shouldIncludeProcesses
+        )
         let gpu = GPUReader.read()
 
         return MetricSnapshot(
@@ -115,6 +120,7 @@ public final class SystemSampler: @unchecked Sendable {
             disk: disk,
             network: network,
             processes: processes,
+            cpuProcesses: cpuProcesses,
             gpu: gpu,
             topCPUProcesses: topCPU
         )
@@ -426,15 +432,20 @@ public final class SystemSampler: @unchecked Sendable {
         now: UInt64,
         elapsed: TimeInterval,
         includeProcesses: Bool
-    ) -> (processes: [ProcessStatus], energy: EnergyStatus, topCPU: [ProcessAttribution]) {
+    ) -> (
+        processes: [ProcessStatus],
+        cpuProcesses: [ProcessStatus],
+        energy: EnergyStatus,
+        topCPU: [ProcessAttribution]
+    ) {
         guard includeProcesses else {
-            return ([], sampleEnergy(entries: [], elapsed: elapsed), [])
+            return ([], [], sampleEnergy(entries: [], elapsed: elapsed), [])
         }
         let interval = config.processInterval
         if interval > 0, let last = lastProcessScan {
             let sinceLast = Double(now &- last) / 1_000_000_000
             if sinceLast < interval {
-                return (cachedProcesses, cachedEnergy, cachedTopCPU)
+                return (cachedProcesses, cachedCPUProcesses, cachedEnergy, cachedTopCPU)
             }
         }
         // 首次扫描没有上一帧，用调用方的 elapsed；之后用两次扫描之间的真实间隔，
@@ -448,6 +459,7 @@ public final class SystemSampler: @unchecked Sendable {
         lastProcessScan = now
         let result = sampleProcesses(elapsed: scanElapsed)
         cachedProcesses = result.processes
+        cachedCPUProcesses = result.cpuProcesses
         cachedEnergy = result.energy
         cachedTopCPU = result.topCPU
         return result
@@ -455,7 +467,12 @@ public final class SystemSampler: @unchecked Sendable {
 
     private func sampleProcesses(
         elapsed: TimeInterval
-    ) -> (processes: [ProcessStatus], energy: EnergyStatus, topCPU: [ProcessAttribution]) {
+    ) -> (
+        processes: [ProcessStatus],
+        cpuProcesses: [ProcessStatus],
+        energy: EnergyStatus,
+        topCPU: [ProcessAttribution]
+    ) {
         let pids = Self.allPIDs()
         var raw: [pid_t: ProcessRaw] = [:]
         raw.reserveCapacity(pids.count)
@@ -498,10 +515,11 @@ public final class SystemSampler: @unchecked Sendable {
         }
 
         // 必须在按内存截断之前取 top CPU：CPU 高但内存小的进程可能不在 processes 里。
+        // 归因要按名字聚合的名单；面板还要一份逐 PID 的 CPU 榜，切到 CPU 排序后能直接点开退出。
         let topCPU = ProcessRanking.attributions(from: records, limit: 8, by: .cpu)
-        let sorted = records.sorted { $0.memory > $1.memory }
-        let limited = Array(sorted.prefix(config.processLimit))
-        return (limited, sampleEnergy(entries: energyEntries, elapsed: elapsed), topCPU)
+        let limited = ProcessRanking.ranked(records, by: .memory, limit: config.processLimit)
+        let cpuLimited = ProcessRanking.ranked(records, by: .cpu, limit: config.processLimit)
+        return (limited, cpuLimited, sampleEnergy(entries: energyEntries, elapsed: elapsed), topCPU)
     }
 
     private func sampleEnergy(

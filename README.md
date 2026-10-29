@@ -120,7 +120,9 @@ bash scripts/bundle.sh --archive
 | 磁盘 | 读/写速率、可用空间 | `IOBlockStorageDriver` 累计字节差分 |
 | 网络 | 上下行速率、主接口 | `NET_RT_IFLIST2` 64 位计数差分，速率不计 `lo0` |
 | GPU | 利用率大数字 + 90 秒趋势线 + 显存占用/核心数 | `IOAccelerator` 的 `PerformanceStatistics`（`Device Utilization %`、`In use system memory`），与活动监视器 GPU 页签同源 |
-| 进程 | 内存占用最高的 3 个（大尺寸小组件 5 个） | `proc_pid_rusage` 的 `ri_phys_footprint` |
+| 进程 | 内存或 CPU 占用最高的 3 个（详细档 5 个），点开可退出 | `proc_pid_rusage` 的 `ri_phys_footprint` 与 CPU 占用差分 |
+
+进程卡片标题右侧有个「内存 / CPU」小开关，两边都是逐 PID 的排行（不是按名字合并的归因榜），所以 CPU 飙高但内存不大的进程也能在这里找到。点任意一行打开进程信息——可执行路径、父进程、启动时间，以及退出 / 强制退出；系统路径、其他用户的进程和本应用自己会被拦下。
 
 <p align="center">
   <img src="docs/widget-medium.png" alt="WidgetKit 中尺寸：CPU 主板与内存、磁盘、网络、能耗，有 GPU 时再加一格 GPU" width="620" />
@@ -331,7 +333,7 @@ WidgetKit 不是渲染循环，是「定时快照」：时间线给一条数据�
 
 - **系统小组件约 60 秒一跳**，这是 WidgetKit 的调度上限，程序无法绕过。
 - **能耗是物理瓦数**，不是活动监视器的「能耗影响」分数，两者没有量纲对应。
-- **进程列表只覆盖当前用户**，且按内存排序，面板显示前 3、采样层最多保留 24 条。
+- **进程列表只覆盖当前用户**：内存榜与 CPU 榜各按对应口径取前 3（详细档 5 个），采样层每张榜最多保留 24 条。
 - **清理不碰文件缓存与显存**：释放文件缓存要 `sudo purge`，显存只能靠退出占用它的 App；面板只读 GPU 利用率与显存占用，不提供释放。
 - **清理不处理真正的僵尸进程**：Z 状态已经退出，只能由父进程回收，杀父进程风险更大。
 - **被 launchd 保活的任务会自动重新拉起**（哪怕是 `launchctl submit` 提交的临时任务，实测 `runs = 2`）。

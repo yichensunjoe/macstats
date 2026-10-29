@@ -133,7 +133,9 @@ On first launch a small `CPU · Memory` readout appears in the menu bar and the 
 | Disk | Read / write rate, free space | Cumulative `IOBlockStorageDriver` byte deltas |
 | Network | Up / down rate, primary interface | 64-bit `NET_RT_IFLIST2` counters; rates exclude `lo0` |
 | GPU | Large utilization + 90 s trend + unified-memory use and core count | `PerformanceStatistics` on `IOAccelerator` (`Device Utilization %`, `In use system memory`), the same source as Activity Monitor's GPU tab |
-| Processes | Top 3 by memory (top 5 on the large widget) | `ri_phys_footprint` from `proc_pid_rusage` |
+| Processes | Top 3 by memory or CPU (top 5 in the expanded panel); click a row to quit | `ri_phys_footprint` and CPU deltas from `proc_pid_rusage` |
+
+A small “Memory / CPU” switch sits at the right of the process card's title. Both lists are per-PID rankings (not the name-aggregated attribution), so a process with high CPU and modest memory shows up here too. Click any row for its executable path, parent, start time, and Quit / Force Quit; system paths, other users' processes and the app itself are refused.
 
 <p align="center">
   <img src="../widget-medium.png" alt="Medium widget: CPU with per-core bars, plus memory, disk, network and energy tiles, with a GPU tile when available" width="620" />
@@ -330,7 +332,7 @@ No. The release is Apple silicon (arm64) only: there is no Intel build and no Ro
 
 - **The system widget ticks about once every 60 seconds.** That is WidgetKit's scheduling limit; no app can bypass it.
 - **Energy is physical watts**, not Activity Monitor's "Energy Impact" score. The two have no unit correspondence.
-- **The process list covers the current user only**, sorted by memory: the panel shows three, the sampling layer keeps up to 24.
+- **The process list covers the current user only**: the memory and CPU rankings each show the top three (five in the expanded panel), and the sampler keeps up to 24 per ranking.
 - **Cleanup does not touch file cache or VRAM**: purging the file cache needs `sudo purge`, and VRAM is only released by quitting the app using it. The panel reads GPU utilization and memory use; it does not free them.
 - **Cleanup does not handle true zombies**: a `Z` process has already exited and only its parent can reap it.
 - **launchd-managed jobs come back**: even one-shot `launchctl submit` jobs are restarted (observed `runs = 2`), so cleanup only frees memory for the gap; most real services are excluded by the socket rule anyway.

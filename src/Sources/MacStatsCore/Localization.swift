@@ -247,6 +247,9 @@ public enum L10nKey: String, CaseIterable, Sendable {
     case cumulative
     case totalNetworkInOut
     case topMemory
+    case topCPU
+    case processSortMemory
+    case processSortCPU
     case sampling
     case load
     case loadAmount
@@ -460,7 +463,7 @@ public final class L10n: @unchecked Sendable {
         .processesCount3: "3 个进程",
         .processesCount5: "5 个进程",
         .processesCount8: "8 个进程",
-        .processesHint: "在标准与详细面板中按内存降序排列占用最高的进程。",
+        .processesHint: "在标准与详细面板中列出占用最高的进程，卡片标题右侧可切换按内存或 CPU 排序。点开一行可查看详情、退出或强制退出。",
 
         .historySection: "历史与告警",
         .historyRecording: "记录历史",
@@ -570,6 +573,9 @@ public final class L10n: @unchecked Sendable {
         .cumulative: "累计",
         .totalNetworkInOut: "累计 ↓ %@ · ↑ %@",
         .topMemory: "内存占用最高",
+        .topCPU: "CPU 占用最高",
+        .processSortMemory: "内存",
+        .processSortCPU: "CPU",
         .sampling: "采样中…",
         .load: "负载",
         .loadAmount: "负载 %@",
@@ -716,7 +722,7 @@ public final class L10n: @unchecked Sendable {
         .processesCount3: "3 processes",
         .processesCount5: "5 processes",
         .processesCount8: "8 processes",
-        .processesHint: "Processes with highest memory consumption shown in standard/expanded panels.",
+        .processesHint: "Lists top processes in the standard and expanded panels; switch between memory and CPU order at the card header. Click a row to inspect, quit, or force quit.",
 
         .historySection: "History & Alerts",
         .historyRecording: "Record History",
@@ -826,6 +832,9 @@ public final class L10n: @unchecked Sendable {
         .cumulative: "Total",
         .totalNetworkInOut: "Total ↓ %@ · ↑ %@",
         .topMemory: "Top Memory",
+        .topCPU: "Top CPU",
+        .processSortMemory: "Memory",
+        .processSortCPU: "CPU",
         .sampling: "Sampling…",
         .load: "Load",
         .loadAmount: "Load %@",

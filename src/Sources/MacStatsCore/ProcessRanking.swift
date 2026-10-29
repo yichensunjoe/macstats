@@ -16,8 +16,25 @@ public enum ProcessRanking {
     /// 同名进程保持各自独立（不聚合），供需要逐 PID 明细的调用方使用；
     /// 归因场景请用 `attributions(from:limit:by:)`，它会先按名字聚合。
     public static func topByCPU(_ processes: [ProcessStatus], limit: Int = 8) -> [ProcessStatus] {
+        ranked(processes, by: .cpu, limit: limit)
+    }
+
+    /// 按指定指标降序、名字升序、pid 升序取前 `limit` 个，逐 PID 不聚合。
+    ///
+    /// 面板要在内存榜和 CPU 榜之间切换：两张榜都得在采样截断**之前**从全量进程里取，
+    /// 否则高 CPU、低内存的进程永远不会出现在可点列表里。
+    public static func ranked(
+        _ processes: [ProcessStatus],
+        by metric: AttributionMetric,
+        limit: Int = 8
+    ) -> [ProcessStatus] {
         guard limit > 0 else { return [] }
-        return Array(processes.sorted(by: cpuOrder).prefix(limit))
+        let order: (ProcessStatus, ProcessStatus) -> Bool
+        switch metric {
+        case .cpu: order = cpuOrder
+        case .memory: order = memoryOrder
+        }
+        return Array(processes.sorted(by: order).prefix(limit))
     }
 
     /// 先按 `name` 聚合（cpu 求和、memory 求和），再按指定指标降序、名字升序取前 `limit`。
@@ -62,6 +79,12 @@ public enum ProcessRanking {
 
     private static func cpuOrder(_ lhs: ProcessStatus, _ rhs: ProcessStatus) -> Bool {
         if lhs.cpu != rhs.cpu { return lhs.cpu > rhs.cpu }
+        if lhs.name != rhs.name { return lhs.name < rhs.name }
+        return lhs.pid < rhs.pid
+    }
+
+    private static func memoryOrder(_ lhs: ProcessStatus, _ rhs: ProcessStatus) -> Bool {
+        if lhs.memory != rhs.memory { return lhs.memory > rhs.memory }
         if lhs.name != rhs.name { return lhs.name < rhs.name }
         return lhs.pid < rhs.pid
     }

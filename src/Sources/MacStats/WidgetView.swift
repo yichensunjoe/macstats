@@ -46,6 +46,8 @@ struct WidgetView: View {
     var onProcessTap: ((ProcessStatus) -> Void)?
 
     @State private var hovering = false
+    /// 进程榜按内存还是 CPU 排。默认内存，和旧行为一致；不跨启动保留。
+    @State private var processSort: ProcessSort = .memory
     /// 当前打开的峰值详情；nil 表示没有 popover。点空白或再次点击同一个峰值都会回到 nil。
     @State private var selectedPeak: HistoryPeak?
 
@@ -603,14 +605,87 @@ struct WidgetView: View {
         }
     }
 
-    private func processTile(_ layout: WidgetLayout) -> some View {
-        Tile(title: L10n.t(.topMemory), systemImage: "list.bullet", tint: Theme.primaryText.opacity(0.7)) {
-            let total = max(snapshot.processes.first?.memory ?? 0, 1)
-            VStack(spacing: 4) {
-                ForEach(snapshot.processes.prefix(min(layout.processRows, data.topProcessesCount))) { process in
-                    ProcessLine(process: process, total: total, action: onProcessTap)
+    /// 进程榜排序口径：内存（默认）或 CPU。两张榜都由采样层在截断前算好，
+    /// CPU 榜同样带 PID，所以高 CPU、低内存的进程也能直接点开退出。
+    enum ProcessSort: Hashable, CaseIterable {
+        case memory
+        case cpu
+
+        var title: String {
+            switch self {
+            case .memory: L10n.t(.processSortMemory)
+            case .cpu: L10n.t(.processSortCPU)
+            }
+        }
+    }
+
+    private var displayedProcesses: [ProcessStatus] {
+        switch processSort {
+        case .memory: snapshot.processes
+        case .cpu: snapshot.cpuRankedProcesses
+        }
+    }
+
+    /// 行内比例条跟着当前榜的口径走：内存榜按最大内存归一，CPU 榜按最大 CPU 归一。
+    private func processFraction(_ process: ProcessStatus, in list: [ProcessStatus]) -> Double {
+        switch processSort {
+        case .memory:
+            let top = list.map(\.memory).max() ?? 0
+            return top > 0 ? Double(process.memory) / Double(top) : 0
+        case .cpu:
+            let top = list.map(\.cpu).max() ?? 0
+            return top > 0 ? max(0, process.cpu) / top : 0
+        }
+    }
+
+    private var processSortToggle: some View {
+        HStack(spacing: 1) {
+            ForEach(ProcessSort.allCases, id: \.self) { sort in
+                Button {
+                    processSort = sort
+                } label: {
+                    Text(sort.title)
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(
+                            processSort == sort ? Theme.primaryText.opacity(0.9) : Theme.tertiaryText
+                        )
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                .fill(processSort == sort ? Theme.primaryText.opacity(0.14) : .clear)
+                        )
+                        .contentShape(Rectangle())
                 }
-                if snapshot.processes.isEmpty {
+                .buttonStyle(.plain)
+                .help(sort == .memory ? L10n.t(.topMemory) : L10n.t(.topCPU))
+            }
+        }
+        .padding(1.5)
+        .background(
+            RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                .fill(Theme.track.opacity(0.5))
+        )
+    }
+
+    private func processTile(_ layout: WidgetLayout) -> some View {
+        let processes = Array(displayedProcesses.prefix(min(layout.processRows, data.topProcessesCount)))
+        return Tile(
+            title: processSort == .cpu ? L10n.t(.topCPU) : L10n.t(.topMemory),
+            systemImage: "list.bullet",
+            tint: Theme.primaryText.opacity(0.7),
+            accessory: AnyView(processSortToggle)
+        ) {
+            VStack(spacing: 4) {
+                ForEach(processes) { process in
+                    ProcessLine(
+                        process: process,
+                        fraction: processFraction(process, in: processes),
+                        tint: processSort == .cpu ? Theme.cpu : Theme.memory,
+                        action: onProcessTap
+                    )
+                }
+                if processes.isEmpty {
                     Text(L10n.t(.sampling))
                         .font(Theme.captionFont)
                         .foregroundStyle(Theme.tertiaryText)
@@ -751,7 +826,8 @@ private struct PeakDetailView: View {
 /// 只有宿主面板传入回调时才可点；离屏截图与 WidgetKit 渲染保持纯展示。
 private struct ProcessLine: View {
     let process: ProcessStatus
-    let total: UInt64
+    let fraction: Double
+    let tint: Color
     let action: ((ProcessStatus) -> Void)?
 
     @State private var hovered = false
@@ -765,8 +841,8 @@ private struct ProcessLine: View {
             ProcessRow(
                 name: process.name,
                 value: "CPU \(PercentFormat.processCPU(process.cpu))  \(ByteFormat.processMemory(process.memory))",
-                fraction: Double(process.memory) / Double(max(total, 1)),
-                tint: Theme.memory
+                fraction: fraction,
+                tint: tint
             )
             .padding(.horizontal, 3)
             .padding(.vertical, 1)

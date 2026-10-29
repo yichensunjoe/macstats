@@ -195,6 +195,77 @@ final class ProcessRankingTests: XCTestCase {
     func testEmptySnapshotTopCPUIsEmpty() {
         XCTAssertNil(MetricSnapshot.empty.topCPUProcesses)
         XCTAssertTrue(MetricSnapshot.empty.topCPU.isEmpty)
+        XCTAssertNil(MetricSnapshot.empty.cpuProcesses)
+        XCTAssertTrue(MetricSnapshot.empty.cpuRankedProcesses.isEmpty)
+    }
+
+    // MARK: - 面板内存/CPU 双榜
+
+    /// 内存榜：内存降序 → 名字升序 → pid 升序。
+    func testRankedByMemorySortsByMemoryThenNameThenPID() {
+        let processes = [
+            process(pid: 3, name: "beta", cpu: 0.1, memory: 500),
+            process(pid: 2, name: "alpha", cpu: 0.2, memory: 500),
+            process(pid: 1, name: "gamma", cpu: 0.3, memory: 900)
+        ]
+        XCTAssertEqual(ProcessRanking.ranked(processes, by: .memory, limit: 3).map(\.pid), [1, 2, 3])
+        XCTAssertEqual(ProcessRanking.ranked(processes, by: .memory, limit: 1).map(\.pid), [1])
+        XCTAssertTrue(ProcessRanking.ranked(processes, by: .memory, limit: 0).isEmpty)
+    }
+
+    /// 高 CPU、低内存的进程必须在 CPU 榜里，即使它被内存榜的截断丢掉了。
+    func testRankedByCPUKeepsHighCPULowMemoryProcessOutsideMemoryLimit() {
+        let processes = [
+            process(pid: 1, name: "MemoryHogA", cpu: 0.01, memory: 9_000),
+            process(pid: 2, name: "MemoryHogB", cpu: 0.02, memory: 8_000),
+            process(pid: 3, name: "CPUHog", cpu: 1.75, memory: 40)
+        ]
+        let memoryTop = ProcessRanking.ranked(processes, by: .memory, limit: 2)
+        XCTAssertEqual(memoryTop.map(\.pid), [1, 2])
+        XCTAssertFalse(memoryTop.contains { $0.pid == 3 })
+
+        let cpuTop = ProcessRanking.ranked(processes, by: .cpu, limit: 2)
+        XCTAssertEqual(cpuTop.map(\.pid), [3, 2])
+        XCTAssertEqual(cpuTop.first?.pid, 3, "CPU 榜要带出可点击的 PID")
+    }
+
+    /// 新快照同时带两份榜，各自保持自己的顺序，编解码后不串行。
+    func testSnapshotCarriesMemoryAndCPUProcessLists() throws {
+        var snapshot = MetricSnapshot.empty
+        snapshot.processes = [
+            process(pid: 2, name: "MemoryHog", cpu: 0.01, memory: 9_000),
+            process(pid: 3, name: "CPUHog", cpu: 1.75, memory: 40)
+        ]
+        snapshot.cpuProcesses = [
+            process(pid: 3, name: "CPUHog", cpu: 1.75, memory: 40),
+            process(pid: 2, name: "MemoryHog", cpu: 0.01, memory: 9_000)
+        ]
+
+        let decoded = try JSONDecoder().decode(
+            MetricSnapshot.self,
+            from: JSONEncoder().encode(snapshot)
+        )
+        XCTAssertEqual(decoded.processes.map(\.pid), [2, 3])
+        XCTAssertEqual(decoded.cpuProcesses?.map(\.pid), [3, 2])
+        XCTAssertEqual(decoded.cpuRankedProcesses.map(\.pid), [3, 2])
+    }
+
+    /// 旧 JSON 没有 cpuProcesses：解码为 nil，读取时回退到内存榜重新按 CPU 排。
+    func testLegacySnapshotWithoutCPUProcessesFallsBackToResorting() throws {
+        var snapshot = MetricSnapshot.empty
+        snapshot.processes = [
+            process(pid: 2, name: "MemoryHog", cpu: 0.01, memory: 9_000),
+            process(pid: 3, name: "CPUHog", cpu: 1.75, memory: 40)
+        ]
+        let data = try JSONEncoder().encode(snapshot)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "cpuProcesses")
+        let legacy = try JSONDecoder().decode(
+            MetricSnapshot.self,
+            from: JSONSerialization.data(withJSONObject: object)
+        )
+        XCTAssertNil(legacy.cpuProcesses)
+        XCTAssertEqual(legacy.cpuRankedProcesses.map(\.pid), [3, 2])
     }
 
     // MARK: - 采样层接线
@@ -211,5 +282,19 @@ final class ProcessRankingTests: XCTestCase {
         XCTAssertLessThanOrEqual(first.topCPU.count, 8)
         XCTAssertEqual(first.topCPU, cached.topCPU, "缓存路径不能把 topCPU 丢掉")
         XCTAssertEqual(first.topCPUProcesses, cached.topCPUProcesses)
+    }
+
+    /// CPU 榜同样在截断前算，并随节流缓存一起带出。
+    func testSamplerSnapshotCarriesCPUProcessListOutsideMemoryLimitAndCachePath() {
+        let sampler = SystemSampler(config: SamplerConfig(processLimit: 1, processInterval: 30))
+        let first = sampler.sample()
+        let cached = sampler.sample()
+
+        let cpuList = first.cpuProcesses ?? []
+        XCTAssertEqual(cpuList.count, 1, "cpuProcesses 与 processLimit 同上限")
+        XCTAssertEqual(cached.cpuProcesses, cpuList, "缓存路径不能把 CPU 榜丢掉")
+        if let topCPU = first.topCPU.first {
+            XCTAssertEqual(cpuList.first?.name, topCPU.name, "逐 PID 榜首应与聚合归因的元凶一致")
+        }
     }
 }

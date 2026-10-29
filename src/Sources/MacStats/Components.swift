@@ -8,6 +8,8 @@ struct Tile<Content: View>: View {
     var systemImage: String
     var tint: Color
     var minHeight: CGFloat = 96
+    /// 标题行右侧的小控件（例如进程榜的内存/CPU 切换）。默认不占位。
+    var accessory: AnyView? = nil
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -20,7 +22,12 @@ struct Tile<Content: View>: View {
                     .font(Theme.labelFont)
                     .tracking(0.4)
                     .foregroundStyle(Theme.secondaryText)
-                Spacer(minLength: 0)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                Spacer(minLength: 2)
+                if let accessory {
+                    accessory
+                }
             }
             content
             Spacer(minLength: 0)
