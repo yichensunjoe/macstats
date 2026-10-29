@@ -42,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         static let cleanupMinimumIdle = "cleanupMinimumIdle"
         static let cleanupMinMemoryMB = "cleanupMinMemoryMB"
         static let topProcessesCount = "topProcessesCount"
+        static let processSort = "processSort"
         static let showMenuBarStats = "showMenuBarStats"
         static let historyEnabled = "historyEnabled"
         static let historyRetentionDays = "historyRetentionDays"
@@ -96,6 +97,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var cleanupMinimumIdle: TimeInterval = 600
     var cleanupMinMemoryMB: Int = 20
     var topProcessesCount: Int = 5
+    /// 进程榜口径：内存（默认）或 CPU。存在偏好里，重开面板沿用上次的榜。
+    var processSort: ProcessSort = .memory
     var showMenuBarStats = true
     var historyEnabled = true
     var historyRetentionDays = 30
@@ -247,6 +250,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if defaults.object(forKey: Key.topProcessesCount) != nil {
             topProcessesCount = max(1, defaults.integer(forKey: Key.topProcessesCount))
         }
+        // 缺失或旧版本写坏时回落内存榜，不因偏好异常让面板空掉。
+        processSort = ProcessSort.stored(defaults.string(forKey: Key.processSort))
 
         if defaults.object(forKey: Key.showMenuBarStats) != nil {
             showMenuBarStats = defaults.bool(forKey: Key.showMenuBarStats)
@@ -263,6 +268,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         setupHistoryStore()
 
         viewModel.data.refreshInterval = interval
+        viewModel.data.processSort = processSort
     }
 
     // MARK: - Menu bar
@@ -499,7 +505,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     self?.playSoundEffect()
                     self?.triggerTick()
                 }
-            }
+            },
+            // 标题旁的小开关切换口径：立即写偏好并刷新共享模型，
+            // 不等下一次采样，多个面板同步。
+            onProcessSortChange: { [weak self] sort in self?.setProcessSort(sort) }
         )
     }
 
@@ -898,6 +907,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         triggerTick()
     }
 
+    func setProcessSort(_ sort: ProcessSort) {
+        guard processSort != sort else { return }
+        processSort = sort
+        defaults.set(sort.rawValue, forKey: Key.processSort)
+        viewModel.data.processSort = sort
+    }
+
     // MARK: - 启动与通知设置
 
     func setStartHidden(_ on: Bool) {
@@ -987,6 +1003,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         setRefreshInterval(1)
         setSmoothingWindow(5)
         setTopProcessesCount(5)
+        setProcessSort(.memory)
         setStartHidden(false)
         setSoundEffects(true)
         setNotifyOnCleanup(true)
@@ -1020,7 +1037,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             Key.accentTint, Key.smoothingWindow, Key.startHidden,
             Key.notifyOnCleanup, Key.soundEffects, Key.memoryAlert,
             Key.cleanupMinimumIdle, Key.cleanupMinMemoryMB, Key.topProcessesCount,
-            Key.showMenuBarStats, Key.historyEnabled, Key.historyRetentionDays, Key.thresholdAlerts
+            Key.processSort, Key.showMenuBarStats, Key.historyEnabled,
+            Key.historyRetentionDays, Key.thresholdAlerts
         ]
         for key in keys {
             defaults.removeObject(forKey: key)
@@ -1379,6 +1397,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         currentData.snapshot = snapshot.applying(averages)
         currentData.refreshInterval = interval
         currentData.topProcessesCount = topProcessesCount
+        currentData.processSort = processSort
 
         // 细粒度更新 Observable 模型：不替换 NSHostingView.rootView，
         // SwiftUI 自动按需刷新依赖属性的子视图。

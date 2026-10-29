@@ -268,6 +268,20 @@ final class ProcessRankingTests: XCTestCase {
         XCTAssertEqual(legacy.cpuRankedProcesses.map(\.pid), [3, 2])
     }
 
+    // MARK: - 排序口径偏好
+
+    /// rawValue 是跨版本存盘契约：认得的恢复，缺失 / 旧版本 / 手改坏了一律回落内存榜。
+    func testProcessSortStoredValueRoundTripsAndFallsBackToMemory() {
+        XCTAssertEqual(ProcessSort.memory.rawValue, "memory")
+        XCTAssertEqual(ProcessSort.cpu.rawValue, "cpu")
+        XCTAssertEqual(ProcessSort.stored("cpu"), .cpu)
+        XCTAssertEqual(ProcessSort.stored("memory"), .memory)
+        XCTAssertEqual(ProcessSort.stored(nil), .memory)
+        XCTAssertEqual(ProcessSort.stored(""), .memory)
+        XCTAssertEqual(ProcessSort.stored("GPU"), .memory)
+        XCTAssertEqual(ProcessSort.stored("cpu "), .memory)
+    }
+
     // MARK: - 采样层接线
 
     /// topCPU 必须在按内存截断之前算，并在进程扫描节流的缓存路径上一起带出。

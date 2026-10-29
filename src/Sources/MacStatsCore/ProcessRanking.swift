@@ -6,6 +6,28 @@ public enum AttributionMetric: String, Sendable {
     case memory
 }
 
+/// 面板进程榜的排序口径。
+///
+/// rawValue 直接写进偏好，是跨版本存盘契约，不要改名。默认内存，和 0.4.5 之前一致；
+/// 用户切过一次就记住，重开面板不必再切。
+public enum ProcessSort: String, CaseIterable, Sendable {
+    case memory
+    case cpu
+
+    /// 读偏好里的字符串：缺失、旧版本或手改坏了一律回落内存榜。
+    public static func stored(_ raw: String?) -> ProcessSort {
+        guard let raw, let sort = ProcessSort(rawValue: raw) else { return .memory }
+        return sort
+    }
+
+    public var title: String {
+        switch self {
+        case .memory: L10n.t(.processSortMemory)
+        case .cpu: L10n.t(.processSortCPU)
+        }
+    }
+}
+
 /// 进程排序纯函数：不采样、不碰 I/O，便于单测。
 ///
 /// 采样层会把进程列表按内存截断到 `processLimit`；CPU 归因必须在截断**之前**

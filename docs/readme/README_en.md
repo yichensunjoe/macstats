@@ -332,7 +332,7 @@ No. The release is Apple silicon (arm64) only: there is no Intel build and no Ro
 
 - **The system widget ticks about once every 60 seconds.** That is WidgetKit's scheduling limit; no app can bypass it.
 - **Energy is physical watts**, not Activity Monitor's "Energy Impact" score. The two have no unit correspondence.
-- **The process list covers the current user only**: the memory and CPU rankings each show the top three (five in the expanded panel), and the sampler keeps up to 24 per ranking.
+- **The process list covers the current user only**: the memory and CPU rankings each show the top three (five in the expanded panel), and the sampler keeps up to 24 per ranking. The chosen ranking is remembered across launches.
 - **Cleanup does not touch file cache or VRAM**: purging the file cache needs `sudo purge`, and VRAM is only released by quitting the app using it. The panel reads GPU utilization and memory use; it does not free them.
 - **Cleanup does not handle true zombies**: a `Z` process has already exited and only its parent can reap it.
 - **launchd-managed jobs come back**: even one-shot `launchctl submit` jobs are restarted (observed `runs = 2`), so cleanup only frees memory for the gap; most real services are excluded by the socket rule anyway.

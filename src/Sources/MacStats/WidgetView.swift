@@ -14,6 +14,8 @@ struct WidgetData {
     var networkOut = MetricRing(capacity: 90)
     var refreshInterval: TimeInterval = 1
     var topProcessesCount: Int = 5
+    /// 进程榜按内存还是 CPU 排。由 AppDelegate 从偏好恢复，切换后立即写回。
+    var processSort: ProcessSort = .memory
     /// 分钟级历史（最多 24 小时），跨分钟时由 AppDelegate 更新。
     var history: [HistorySample] = []
 }
@@ -44,10 +46,10 @@ struct WidgetView: View {
     var onCleanup: () -> Void = {}
     /// 点进程行时打开详情（退出 / 强制退出）。nil 表示这份渲染不可交互（离屏截图、WidgetKit）。
     var onProcessTap: ((ProcessStatus) -> Void)?
+    /// 切换进程榜口径时通知宿主落盘。离屏渲染不传，视图照样按数据里的口径画。
+    var onProcessSortChange: (ProcessSort) -> Void = { _ in }
 
     @State private var hovering = false
-    /// 进程榜按内存还是 CPU 排。默认内存，和旧行为一致；不跨启动保留。
-    @State private var processSort: ProcessSort = .memory
     /// 当前打开的峰值详情；nil 表示没有 popover。点空白或再次点击同一个峰值都会回到 nil。
     @State private var selectedPeak: HistoryPeak?
 
@@ -59,7 +61,8 @@ struct WidgetView: View {
         onRefresh: @escaping () -> Void = {},
         onOpenActivityMonitor: @escaping () -> Void = {},
         onCleanup: @escaping () -> Void = {},
-        onProcessTap: ((ProcessStatus) -> Void)? = nil
+        onProcessTap: ((ProcessStatus) -> Void)? = nil,
+        onProcessSortChange: @escaping (ProcessSort) -> Void = { _ in }
     ) {
         self.model = model
         self.surface = surface
@@ -67,6 +70,7 @@ struct WidgetView: View {
         self.onOpenActivityMonitor = onOpenActivityMonitor
         self.onCleanup = onCleanup
         self.onProcessTap = onProcessTap
+        self.onProcessSortChange = onProcessSortChange
     }
 
     init(
@@ -75,7 +79,8 @@ struct WidgetView: View {
         onRefresh: @escaping () -> Void = {},
         onOpenActivityMonitor: @escaping () -> Void = {},
         onCleanup: @escaping () -> Void = {},
-        onProcessTap: ((ProcessStatus) -> Void)? = nil
+        onProcessTap: ((ProcessStatus) -> Void)? = nil,
+        onProcessSortChange: @escaping (ProcessSort) -> Void = { _ in }
     ) {
         self.model = WidgetViewModel(data: data)
         self.surface = surface
@@ -83,6 +88,7 @@ struct WidgetView: View {
         self.onOpenActivityMonitor = onOpenActivityMonitor
         self.onCleanup = onCleanup
         self.onProcessTap = onProcessTap
+        self.onProcessSortChange = onProcessSortChange
     }
 
     private var snapshot: MetricSnapshot { data.snapshot }
@@ -607,17 +613,8 @@ struct WidgetView: View {
 
     /// 进程榜排序口径：内存（默认）或 CPU。两张榜都由采样层在截断前算好，
     /// CPU 榜同样带 PID，所以高 CPU、低内存的进程也能直接点开退出。
-    enum ProcessSort: Hashable, CaseIterable {
-        case memory
-        case cpu
-
-        var title: String {
-            switch self {
-            case .memory: L10n.t(.processSortMemory)
-            case .cpu: L10n.t(.processSortCPU)
-            }
-        }
-    }
+    /// 口径存在偏好里，重开面板沿用上次的榜。
+    private var processSort: ProcessSort { data.processSort }
 
     private var displayedProcesses: [ProcessStatus] {
         switch processSort {
@@ -642,7 +639,7 @@ struct WidgetView: View {
         HStack(spacing: 1) {
             ForEach(ProcessSort.allCases, id: \.self) { sort in
                 Button {
-                    processSort = sort
+                    onProcessSortChange(sort)
                 } label: {
                     Text(sort.title)
                         .font(.system(size: 8, weight: .bold))
