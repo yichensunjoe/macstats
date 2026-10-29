@@ -579,8 +579,12 @@ private struct ProcessActionView: View {
                     .tint(.red)
             } else {
                 Spacer(minLength: 0)
-                Button(L10n.t(.menuRevealInActivityMonitor)) { onRevealInActivityMonitor() }
-                    .help(L10n.t(.menuRevealInActivityMonitorHint))
+                Button(L10n.t(.menuRevealInActivityMonitor)) {
+                    onRevealInActivityMonitor()
+                    // 跳到活动监视器后这扇窗就没用了；顺手关掉，切回来时不挡在前面。
+                    NSApp.stopModal(withCode: .cancel)
+                }
+                .help(L10n.t(.menuRevealInActivityMonitorHint))
                 Button(L10n.t(.close)) { NSApp.stopModal(withCode: .cancel) }
                     .keyboardShortcut(.cancelAction)
                 Button(L10n.t(.quitProcess)) { run(.quit) }
