@@ -515,13 +515,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             onCleanup: { [weak self] in self?.runCleanup() },
             // 点进程行：看详情、退出或强制退出。WidgetKit 扩展没这个权限，
             // 所以只有宿主应用的面板会传回调。
-            onProcessTap: { [weak self] process in
-                NSApp.activate()
-                ProcessDialogs.showProcess(process, confirmForceQuit: self?.confirmForceQuit ?? true) { [weak self] in
-                    self?.playSoundEffect()
-                    self?.triggerTick()
-                }
-            },
+            onProcessTap: { [weak self] process in self?.showProcessDetails(process) },
             // 右键进程行：与菜单栏同一组「查看详情 / 退出 / 强制退出」。
             onProcessMenu: { [weak self] process in self?.processContextMenu(for: process) },
             // 标题旁的小开关切换口径：立即写偏好并刷新共享模型，
@@ -831,16 +825,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             .first(where: { $0.pid == cached.pid }) ?? cached
     }
 
+    /// 详情窗的三处入口共用：激活应用、传确认开关，并把活动监视器入口接回当前进程。
+    private func showProcessDetails(_ process: ProcessStatus) {
+        NSApp.activate()
+        ProcessDialogs.showProcess(
+            process,
+            confirmForceQuit: confirmForceQuit,
+            onRevealInActivityMonitor: { [weak self] in self?.revealInActivityMonitor(process) }
+        ) { [weak self] in
+            self?.playSoundEffect()
+            self?.triggerTick()
+        }
+    }
+
     /// 从菜单打开进程详情。菜单收起后再开模态窗口，别把模态循环卡在菜单跟踪里。
     @objc private func openProcessFromMenu(_ sender: NSMenuItem) {
         guard let live = processFromMenu(sender) else { return }
-        DispatchQueue.main.async { [weak self] in
-            NSApp.activate()
-            ProcessDialogs.showProcess(live, confirmForceQuit: self?.confirmForceQuit ?? true) { [weak self] in
-                self?.playSoundEffect()
-                self?.triggerTick()
-            }
-        }
+        DispatchQueue.main.async { [weak self] in self?.showProcessDetails(live) }
     }
 
     /// 菜单里的「退出」：与详情窗同一个 `ProcessTerminator`，发信号前重新核一次 PID 身份。
@@ -885,13 +886,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openProcessFromPanelMenu(_ sender: NSMenuItem) {
         guard let process = processFromPanelMenu(sender) else { return }
-        DispatchQueue.main.async { [weak self] in
-            NSApp.activate()
-            ProcessDialogs.showProcess(process, confirmForceQuit: self?.confirmForceQuit ?? true) { [weak self] in
-                self?.playSoundEffect()
-                self?.triggerTick()
-            }
-        }
+        DispatchQueue.main.async { [weak self] in self?.showProcessDetails(process) }
     }
 
     @objc private func quitProcessFromPanelMenu(_ sender: NSMenuItem) {

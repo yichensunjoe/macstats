@@ -25,9 +25,11 @@ enum ProcessDialogs {
 
     /// 单个进程的详情与操作。对应「在活动监视器里双击一行」：
     /// 看信息、正常退出，或二次确认后强制退出；`confirmForceQuit` 由偏好控制。
+    /// 「在活动监视器中显示」由调用方处理（宿主知道怎么打开并复制名称）。
     static func showProcess(
         _ process: ProcessStatus,
         confirmForceQuit: Bool = true,
+        onRevealInActivityMonitor: @escaping () -> Void = {},
         onTerminated: @escaping () -> Void
     ) {
         let detail = ProcessInventory.detail(pid: process.pid)
@@ -38,6 +40,7 @@ enum ProcessDialogs {
                 detail: detail,
                 refusal: refusal,
                 confirmForceQuit: confirmForceQuit,
+                onRevealInActivityMonitor: onRevealInActivityMonitor,
                 onTerminated: onTerminated
             ),
             size: CGSize(width: 560, height: refusal == nil ? 486 : 424),
@@ -405,6 +408,7 @@ private struct ProcessActionView: View {
     let refusal: TerminationRefusal?
     /// false 时强制退出直接发 SIGKILL，不再在窗内二次确认。
     let confirmForceQuit: Bool
+    let onRevealInActivityMonitor: () -> Void
     let onTerminated: () -> Void
 
     @State private var working = false
@@ -575,6 +579,8 @@ private struct ProcessActionView: View {
                     .tint(.red)
             } else {
                 Spacer(minLength: 0)
+                Button(L10n.t(.menuRevealInActivityMonitor)) { onRevealInActivityMonitor() }
+                    .help(L10n.t(.menuRevealInActivityMonitorHint))
                 Button(L10n.t(.close)) { NSApp.stopModal(withCode: .cancel) }
                     .keyboardShortcut(.cancelAction)
                 Button(L10n.t(.quitProcess)) { run(.quit) }
